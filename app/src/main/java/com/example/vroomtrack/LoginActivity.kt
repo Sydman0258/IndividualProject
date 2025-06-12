@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -156,9 +157,16 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Create Account
-            Text(
-                text = "Don't have an account? Create one",
-                color = Color.White,)
+            Row (
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Text(
+                    text = "Don't have an account?",
+                    color = Color.White,
+                )
+
             Text(
                 text = " Create one",
                 color = Color.White,
@@ -169,7 +177,7 @@ fun LoginScreen() {
                     // If you want to finish LoginActivity after navigating to RegistrationActivity:
                     // (context as? ComponentActivity)?.finish()
                 }
-            )
+            )}
         }
     }
 }
