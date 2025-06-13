@@ -80,21 +80,15 @@ fun SplashContent(
             contentDescription = "Background",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            // REMOVED OR REDUCED THIS LINE FOR TESTING IMAGE VISIBILITY
-            // colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.4f))
+
         )
 
-        // The gradient Box overlay has been removed, which is good.
 
-        // 3. Content (Text and Buttons) on top
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth(0.8f)
-            // OPTIONAL: Add a semi-transparent black background to the column itself
-            // if the text becomes hard to read without the image tint.
-            // .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-            // .clip(RoundedCornerShape(8.dp)) // ensure clipping if using background with shape
+
         ) {
             Text(
                 text = "VR.O.OM",

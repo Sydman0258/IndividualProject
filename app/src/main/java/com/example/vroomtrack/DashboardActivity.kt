@@ -11,40 +11,40 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height // Import height for Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items // Import items for LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-// REMOVED: import androidx.compose.material3.OutlinedTextField
-// REMOVED: import androidx.compose.material3.OutlinedTextFieldDefaults
-
-import androidx.compose.material3.Scaffold // Import Scaffold
-import androidx.compose.material3.Surface // Import Surface
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme // Import MaterialTheme for typography
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-// REMOVED: import androidx.compose.runtime.getValue
-// REMOVED: import androidx.compose.runtime.mutableStateOf
-// REMOVED: import androidx.compose.runtime.remember
-// REMOVED: import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment // Import Alignment for verticalAlignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color // Ensure Color is imported
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.vroomtrack.R
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
-
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 data class Car(val imageResId: Int, val name: String)
 
@@ -56,22 +56,65 @@ val carList = listOf(
 )
 
 class DashboardActivity : ComponentActivity() {
+    private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize Firebase Auth and Firestore
+        FirebaseApp.initializeApp(this)
+        auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
+
+        // State to hold the fetched username
+        var usernameFromFirestore by mutableStateOf<String?>(null)
+        var isLoadingUsername by mutableStateOf(true)
+
+        // Fetch username from Firestore
+        auth.currentUser?.uid?.let { userId ->
+            val userProfileRef = db.collection("artifacts")
+                .document(application.packageName)
+                .collection("users")
+                .document(userId)
+                .collection("user_profiles")
+                .document("profile")
+
+            userProfileRef.get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        usernameFromFirestore = documentSnapshot.getString("username")
+                    } else {
+                        // Document doesn't exist, maybe user registered without username or data is missing
+                        usernameFromFirestore = "User" // Default if not found
+                    }
+                    isLoadingUsername = false
+                }
+                .addOnFailureListener { e ->
+                    println("Error fetching user profile: ${e.localizedMessage}")
+                    usernameFromFirestore = "Error Loading" // Indicate an error occurred
+                    isLoadingUsername = false
+                }
+        } ?: run {
+            // No user logged in
+            usernameFromFirestore = "Guest"
+            isLoadingUsername = false
+        }
+
         setContent {
             VroomTrackTheme {
-                DashboardScreen()
+                DashboardScreen(
+                    displayName = usernameFromFirestore, // Pass the fetched username
+                    isLoadingUsername = isLoadingUsername // Pass loading state for username
+                )
             }
         }
     }
 }
 
-
 @Composable
-fun DashboardScreen() {
-    // REMOVED: var username by remember { mutableStateOf("") } // Removed state variable
-
+fun DashboardScreen(displayName: String?, isLoadingUsername: Boolean) { // Accept displayName and loading state
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         Scaffold(
             containerColor = Color.Black
@@ -102,11 +145,20 @@ fun DashboardScreen() {
                             contentScale = ContentScale.Crop
                         )
                         Column {
-                            Text(
-                                text = "John Doe",
-                                modifier = Modifier.padding(start = 8.dp),
-                                color = Color.White
-                            )
+                            // Display the dynamic username here
+                            if (isLoadingUsername) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(
+                                    text = displayName ?: "Unknown User", // Use the displayName, with fallback
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    color = Color.White
+                                )
+                            }
                             Text(
                                 text = "Driver",
                                 modifier = Modifier.padding(start = 8.dp),
@@ -126,7 +178,6 @@ fun DashboardScreen() {
                 }
 
                 // Spacer after header, before "POPULAR CARS"
-                // Adjusted spacing after removing the TextField
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
@@ -184,6 +235,7 @@ fun DashboardScreen() {
 @Composable
 fun MyBasicScaffoldScreenPreview() {
     VroomTrackTheme {
-        DashboardScreen()
+        // Provide a dummy displayName and set loading to false for the preview
+        DashboardScreen(displayName = "Preview User", isLoadingUsername = false)
     }
 }
