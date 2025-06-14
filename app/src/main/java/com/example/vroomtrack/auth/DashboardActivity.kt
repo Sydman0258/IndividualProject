@@ -70,20 +70,21 @@ fun DashboardScreen() {
 
     val profileImage = painterResource(id = R.drawable.logo)
 
+    data class Brand(val name: String, val imageRes: Int)
+    data class CarItem(val imageRes: Int, val name: String, val brand: String, val pricePerDay: String, val rating: Double)
+
     val carBrands = listOf(
-        R.drawable.toyota,
-        R.drawable.nissan,
-        R.drawable.porsche,
-        R.drawable.audi,
+        Brand("Toyota", R.drawable.toyota),
+        Brand("Nissan", R.drawable.nissan),
+        Brand("Porsche", R.drawable.porsche),
+        Brand("Audi", R.drawable.audi),
     )
 
-    data class CarItem(val imageRes: Int, val pricePerDay: String, val rating: Double)
-
     val cars = listOf(
-        CarItem(R.drawable.rs6, "$50/day", 4.5),
-        CarItem(R.drawable.nissangtr, "$70/day", 4.0),
-        CarItem(R.drawable.bmwm5, "$65/day", 4.8),
-        CarItem(R.drawable.supra, "$80/day", 4.2),
+        CarItem(R.drawable.rs6, "Audi RS6", "Audi", "$50/day", 4.5),
+        CarItem(R.drawable.nissangtr, "Nissan GTR", "Nissan", "$70/day", 4.0),
+        CarItem(R.drawable.bmwm5, "BMW M5", "BMW", "$65/day", 4.8),
+        CarItem(R.drawable.supra, "Toyota Supra", "Toyota", "$80/day", 4.2),
     )
 
     Column(
@@ -92,7 +93,7 @@ fun DashboardScreen() {
             .background(Color.Black)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Top row with profile image, username, and settings button
+        // Top Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -120,7 +121,6 @@ fun DashboardScreen() {
                 )
             }
 
-            // Settings icon button: navigates to SettingsActivity
             IconButton(onClick = {
                 context.startActivity(Intent(context, SettingsActivity::class.java))
             }) {
@@ -134,6 +134,7 @@ fun DashboardScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Brands
         Text("Popular Brands", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -141,23 +142,35 @@ fun DashboardScreen() {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(carBrands) { brandResId ->
-                Image(
-                    painter = painterResource(id = brandResId),
-                    contentDescription = "Car Brand",
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .clickable {
-                            // TODO: Add filter by brand functionality here
-                        },
-                    contentScale = ContentScale.Crop
-                )
+            items(carBrands) { brand ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(id = brand.imageRes),
+                        contentDescription = brand.name,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                if (brand.name == "Toyota") {
+                                    context.startActivity(Intent(context, ToyotaActivity::class.java))
+                                }
+                                // Handle other brands similarly if needed
+                            },
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = brand.name,
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Cars
         Text("Available Cars", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -171,20 +184,43 @@ fun DashboardScreen() {
                         .fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
                 ) {
-                    Image(
-                        painter = painterResource(id = car.imageRes),
-                        contentDescription = "Car Image",
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp),
-                        contentScale = ContentScale.Crop
-                    )
+                            .height(180.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = car.imageRes),
+                            contentDescription = "Car Image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        Button(
+                            onClick = {
+                                // TODO: Handle booking, open booking screen or dialog
+                                Toast.makeText(context, "Booking ${car.name}", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
+                        ) {
+                            Text(text = "Book", color = Color.White)
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = car.name,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Text(
                         text = car.pricePerDay,
                         color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 14.sp
                     )
                     Text(
                         text = "Rating: ${car.rating}",
