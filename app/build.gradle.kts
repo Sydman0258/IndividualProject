@@ -60,7 +60,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("androidx.compose.material:material-icons-extended:<compose_version>")
-    implementation(platform("com.google.firebase:firebase-bom:33.0.0")) // Ensure you have this line
+    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    implementation ("androidx.compose.runtime:runtime-livedata:1.6.1")
 
     // Add the dependency for the Firebase Firestore library
     implementation("com.google.firebase:firebase-firestore-ktx"

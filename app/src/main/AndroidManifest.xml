@@ -13,10 +13,21 @@
         android:theme="@style/Theme.VroomTrack"
         tools:targetApi="31">
         <activity
-            android:name=".DashboardActivity"
+            android:name=".auth.SettingsActivity"
             android:exported="false"
-            android:label="@string/title_activity_dashboard"
+            android:label="@string/title_activity_settings"
             android:theme="@style/Theme.VroomTrack" />
+        <activity
+            android:name=".auth.DashboardActivity"
+            android:exported="true"
+            android:label="@string/title_activity_dashboard"
+            android:theme="@style/Theme.VroomTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".RegistrationActivity"
             android:exported="false"

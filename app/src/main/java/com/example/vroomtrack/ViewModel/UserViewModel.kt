@@ -17,7 +17,7 @@ class UserViewModel(val repo : UserRepository) : ViewModel(){
         repo.login(email,password,callback)
     }
 
-    //authentication ko function
+
     fun register(
         email: String, password: String,
         callback: (Boolean, String, String) -> Unit

@@ -103,15 +103,20 @@ class UserRepositoryImpl : UserRepository {
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
         ref.child(userId)
-            .addValueEventListener(object : ValueEventListener {
+            .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        var users = snapshot.getValue(UserModel::class.java)
-                        if (users != null) {
-                            callback(true, "User fetched", users)
+                        val user = snapshot.getValue(UserModel::class.java)
+                        if (user != null) {
+                            callback(true, "User fetched", user)
+                        } else {
+                            callback(false, "User data is null", null)
                         }
+                    } else {
+                        callback(false, "User not found", null)
                     }
                 }
+
                 override fun onCancelled(error: DatabaseError) {
                     callback(false, error.message, null)
                 }
