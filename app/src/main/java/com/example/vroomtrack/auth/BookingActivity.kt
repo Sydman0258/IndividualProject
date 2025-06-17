@@ -1,0 +1,377 @@
+package com.example.vroomtrack.auth
+
+import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.vroomtrack.R
+import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import com.example.vroomtrack.Car // Ensure this imports your Car data class
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
+// --- IMPORTS FOR SCROLLING ---
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+// --- END IMPORTS FOR SCROLLING ---
+
+
+class BookingActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        val carName = intent.getStringExtra("car_name") ?: "Unknown Car"
+        val carBrand = intent.getStringExtra("car_brand") ?: "Unknown Brand"
+        val carImageResId = intent.getIntExtra("car_image_res_id", 0)
+        val carPricePerDay = intent.getStringExtra("car_price_per_day") ?: "$0/day"
+        val carRating = intent.getDoubleExtra("car_rating", 0.0)
+        val carDescription = intent.getStringExtra("car_description") ?: "No description available."
+
+        val selectedCar = Car(
+            name = carName,
+            brand = carBrand,
+            imageRes = carImageResId,
+            pricePerDay = carPricePerDay,
+            rating = carRating,
+            description = carDescription
+        )
+
+        if (selectedCar.imageRes == 0 && carName == "Unknown Car") {
+            Toast.makeText(this, "Car details incomplete or not found!", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        setContent {
+            VroomTrackTheme {
+                BookingScreen(
+                    car = selectedCar,
+                    onBackClick = { finish() },
+                    onConfirmBooking = { car, startDate, endDate, totalCost ->
+                        val duration = TimeUnit.MILLISECONDS.toDays(endDate.timeInMillis - startDate.timeInMillis) + 1
+                        Toast.makeText(
+                            this,
+                            "Booking ${car.name} from ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(startDate.time)} to ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(endDate.time)} for $${String.format("%.2f", totalCost)} ($duration days)",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BookingScreen(
+    car: Car,
+    onBackClick: () -> Unit,
+    onConfirmBooking: (Car, Calendar, Calendar, Double) -> Unit
+) {
+    val context = LocalContext.current
+    var startDate by remember { mutableStateOf<Calendar?>(null) }
+    var endDate by remember { mutableStateOf<Calendar?>(null) }
+
+    val showStartDatePicker = remember { mutableStateOf(false) }
+    val showEndDatePicker = remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis()
+    )
+
+    val bookingDurationDays = remember(startDate, endDate) {
+        val startCal = startDate
+        val endCal = endDate
+
+        if (startCal != null && endCal != null && endCal.timeInMillis >= startCal.timeInMillis) {
+            TimeUnit.MILLISECONDS.toDays(endCal.timeInMillis - startCal.timeInMillis) + 1
+        } else {
+            0L
+        }
+    }
+
+    val dailyRateValue = remember(car.pricePerDay) {
+        car.pricePerDay.replace("$", "").replace("/day", "").trim().toDoubleOrNull() ?: 0.0
+    }
+
+    val totalCost = remember(bookingDurationDays, dailyRateValue) {
+        bookingDurationDays * dailyRateValue
+    }
+
+    // --- CHANGE START: Add verticalScroll modifier here ---
+    val scrollState = rememberScrollState() // Create a scroll state
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .verticalScroll(scrollState) // Apply the scroll modifier
+            .padding(16.dp)
+    ) {
+        // Top Bar
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(onClick = { onBackClick() }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Book ${car.name}",
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Car Image
+        if (car.imageRes != 0) {
+            Image(
+                painter = painterResource(id = car.imageRes),
+                contentDescription = car.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(MaterialTheme.shapes.medium),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(Color.Gray.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Image Not Available", color = Color.White)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Car Details
+        Text(
+            text = car.name,
+            color = Color.White,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = car.brand,
+            color = Color.Gray,
+            fontSize = 16.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = car.description,
+            color = Color.LightGray,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Justify
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Daily Rate: ${car.pricePerDay}",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = "Rating: ${car.rating} / 5.0",
+            color = Color.Gray,
+            fontSize = 14.sp
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Booking Options Section
+        Text(
+            text = "Select Booking Dates:",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Start Date Picker
+        OutlinedTextField(
+            value = startDate?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it.time) } ?: "Select Start Date",
+            onValueChange = { /* Read-only */ },
+            label = { Text("Start Date", color = Color.Gray) },
+            readOnly = true,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "Select Start Date",
+                    tint = Color.White,
+                    modifier = Modifier.clickable {
+                        showStartDatePicker.value = true
+                    }
+                )
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color.LightGray,
+                unfocusedBorderColor = Color.DarkGray,
+                focusedLabelColor = Color.LightGray,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White,
+                disabledTextColor = Color.White
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // End Date Picker
+        OutlinedTextField(
+            value = endDate?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it.time) } ?: "Select End Date",
+            onValueChange = { /* Read-only */ },
+            label = { Text("End Date", color = Color.Gray) },
+            readOnly = true,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "Select End Date",
+                    tint = Color.White,
+                    modifier = Modifier.clickable {
+                        showEndDatePicker.value = true
+                    }
+                )
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color.LightGray,
+                unfocusedBorderColor = Color.DarkGray,
+                focusedLabelColor = Color.LightGray,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White,
+                disabledTextColor = Color.White
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Display Booking Duration and Total Cost
+        if (startDate != null && endDate != null && bookingDurationDays > 0) {
+            Text(
+                text = "Duration: $bookingDurationDays day(s)",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = "Estimated Total: $${String.format("%.2f", totalCost)}",
+                color = Color.Green,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        } else if (startDate != null || endDate != null) {
+            Text(
+                text = "Please select both start and end dates, with end date on or after start date.",
+                color = Color.Red,
+                fontSize = 14.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Confirm Booking Button
+        Button(
+            onClick = {
+                val currentStartDate = startDate
+                val currentEndDate = endDate
+
+                if (currentStartDate != null && currentEndDate != null && bookingDurationDays > 0) {
+                    onConfirmBooking(car, currentStartDate, currentEndDate, totalCost)
+                } else {
+                    Toast.makeText(context, "Please select valid booking dates.", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853))
+        ) {
+            Text("Confirm Booking", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        }
+    } // --- CHANGE END: Closing brace of the Column
+    // Date Pickers Dialogs (These remain outside the main scrollable Column)
+    if (showStartDatePicker.value) {
+        DatePickerDialog(
+            onDismissRequest = { showStartDatePicker.value = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        startDate = Calendar.getInstance().apply { timeInMillis = millis }
+                    }
+                    showStartDatePicker.value = false
+                }) {
+                    Text("OK", color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartDatePicker.value = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showEndDatePicker.value) {
+        DatePickerDialog(
+            onDismissRequest = { showEndDatePicker.value = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        endDate = Calendar.getInstance().apply { timeInMillis = millis }
+                    }
+                    showEndDatePicker.value = false
+                }) {
+                    Text("OK", color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndDatePicker.value = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}

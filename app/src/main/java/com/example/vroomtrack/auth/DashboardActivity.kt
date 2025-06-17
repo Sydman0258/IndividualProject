@@ -35,6 +35,7 @@ import com.example.vroomtrack.R
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.UserViewModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import com.example.vroomtrack.Car // Import the Car data class
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,20 +72,49 @@ fun DashboardScreen() {
     val profileImage = painterResource(id = R.drawable.logo)
 
     data class Brand(val name: String, val imageRes: Int)
-    data class CarItem(val imageRes: Int, val name: String, val brand: String, val pricePerDay: String, val rating: Double)
 
     val carBrands = listOf(
         Brand("Toyota", R.drawable.toyota),
         Brand("Nissan", R.drawable.nissan),
         Brand("Porsche", R.drawable.porsche),
         Brand("Audi", R.drawable.audi),
+
     )
 
     val cars = listOf(
-        CarItem(R.drawable.rs6, "Audi RS6", "Audi", "$50/day", 4.5),
-        CarItem(R.drawable.nissangtr, "Nissan GTR", "Nissan", "$70/day", 4.0),
-        CarItem(R.drawable.bmwm5, "BMW M5", "BMW", "$65/day", 4.8),
-        CarItem(R.drawable.supra, "Toyota Supra", "Toyota", "$80/day", 4.2),
+        Car(
+            name = "Audi RS6",
+            brand = "Audi",
+            imageRes = R.drawable.rs6,
+            pricePerDay = "$50/day",
+            rating = 4.5,
+            description = "The Audi RS 6 Avant is a high-performance variant of the A6, known for its powerful engine, quattro all-wheel drive, and spacious wagon body style."
+        ),
+        Car(
+            name = "Nissan GTR",
+            brand = "Nissan",
+            imageRes = R.drawable.nissangtr,
+            pricePerDay = "$70/day",
+            rating = 4.0,
+            description = "The Nissan GT-R, often dubbed 'Godzilla', is a legendary high-performance sports car celebrated for its raw power, advanced all-wheel-drive system, and track capabilities."
+        ),
+        Car(
+            name = "BMW M5",
+            brand = "BMW",
+            imageRes = R.drawable.bmwm5,
+            pricePerDay = "$65/day",
+            rating = 4.8,
+            description = "The BMW M5 is a high-performance version of the BMW 5 Series sedan, known for its powerful V8 engine, luxurious interior, and exceptional driving dynamics."
+        ),
+        Car(
+            name = "Toyota Supra",
+            brand = "Toyota",
+            imageRes = R.drawable.supra,
+            pricePerDay = "$80/day",
+            rating = 4.2,
+            description = "The Toyota Supra is an iconic sports car, renowned for its inline-six engine, balanced chassis, and distinctive design, offering an exhilarating driving experience."
+        ),
+        // Add more cars with descriptions as needed
     )
 
     Column(
@@ -93,7 +123,9 @@ fun DashboardScreen() {
             .background(Color.Black)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Top Row
+        // --- START OF MISSING UI ---
+
+        // Top Row (Profile and Settings)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -134,7 +166,7 @@ fun DashboardScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Brands
+        // Brands Section (LazyRow)
         Text("Popular Brands", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -151,10 +183,15 @@ fun DashboardScreen() {
                             .size(80.dp)
                             .clip(CircleShape)
                             .clickable {
-                                if (brand.name == "Toyota") {
-                                    context.startActivity(Intent(context, ToyotaActivity::class.java))
+                                // Direct navigation to specific brand activities
+                                val intent = when (brand.name) {
+                                    "Toyota" -> Intent(context, ToyotaActivity::class.java)
+
+                                    "BMW" -> Intent(context, BMWActivity::class.java)
+                                    // Add more cases for other brand activities if you have them
+                                    else -> null
                                 }
-                                // Handle other brands similarly if needed
+                                intent?.let { context.startActivity(it) }
                             },
                         contentScale = ContentScale.Crop
                     )
@@ -170,7 +207,10 @@ fun DashboardScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Cars
+        // --- END OF MISSING UI ---
+
+
+        // Available Cars Section (LazyColumn) - This part was likely still there
         Text("Available Cars", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -183,6 +223,7 @@ fun DashboardScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
+                        .background(Color(0xFF1C1C1E)) // Slightly lighter dark background for car cards
                 ) {
                     Box(
                         modifier = Modifier
@@ -197,36 +238,52 @@ fun DashboardScreen() {
                         )
                         Button(
                             onClick = {
-                                // TODO: Handle booking, open booking screen or dialog
-                                Toast.makeText(context, "Booking ${car.name}", Toast.LENGTH_SHORT).show()
+                                // Launch BookingActivity and pass individual car properties
+                                val intent = Intent(context, BookingActivity::class.java).apply {
+                                    putExtra("car_name", car.name)
+                                    putExtra("car_brand", car.brand)
+                                    putExtra("car_image_res_id", car.imageRes)
+                                    putExtra("car_price_per_day", car.pricePerDay)
+                                    putExtra("car_rating", car.rating)
+                                    putExtra("car_description", car.description)
+                                }
+                                context.startActivity(intent)
                             },
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .padding(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)) // Blue "Book Now" button
                         ) {
-                            Text(text = "Book", color = Color.White)
+                            Text(text = "Book Now", color = Color.White)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
-                        text = car.name,
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = car.pricePerDay,
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = "Rating: ${car.rating}",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(
+                            text = car.name,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Brand: ${car.brand}",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = car.pricePerDay,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Rating: ${car.rating} / 5.0",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }

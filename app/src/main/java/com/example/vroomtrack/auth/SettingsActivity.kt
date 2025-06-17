@@ -2,6 +2,7 @@ package com.example.vroomtrack.auth
 
 import android.app.Activity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,7 +26,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.vroomtrack.model.UserDetailModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import com.google.firebase.auth.FirebaseAuth
+import com.example.vroomtrack.ViewModel.UserDetailViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel // Import for viewModel()
+import com.google.firebase.auth.EmailAuthProvider // Import for reauthentication
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,31 +45,54 @@ class SettingsActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreenExpandable() {
+fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // Inject ViewModel
     val context = LocalContext.current
     val activity = context as? Activity
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val userId = currentUser?.uid
 
+    // State for expandable cards
     var expandedPersonal by remember { mutableStateOf(false) }
     var expandedPassword by remember { mutableStateOf(false) }
     var expandedVersion by remember { mutableStateOf(false) }
 
-    // Personal details states
+    // Personal details states (now initialized from observed ViewModel data)
     var name by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var maritalStatusExpanded by remember { mutableStateOf(false) }
     var maritalStatus by remember { mutableStateOf("Select marital status") }
     val maritalStatusOptions = listOf("Single", "Married", "Divorced", "Widowed")
-
     var cardInfo by remember { mutableStateOf("") }
 
     // Password states
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
+
+    // --- Load user details when the screen is first composed or userId changes ---
+    LaunchedEffect(userId) {
+        if (!userId.isNullOrEmpty()) {
+            viewModel.getUserDetails(userId)
+        }
+    }
+
+    // --- Observe user details from ViewModel and update local states ---
+    val userDetails by viewModel.userDetails.collectAsState(initial = null)
+
+    LaunchedEffect(userDetails) {
+        userDetails?.let {
+            name = it.name ?: ""
+            address = it.address ?: ""
+            phoneNumber = it.phone ?: ""
+            maritalStatus = it.maritalStatus ?: "Select marital status"
+            cardInfo = it.cardInfo ?: ""
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -176,6 +205,30 @@ fun SettingsScreenExpandable() {
                     modifier = Modifier.fillMaxWidth(),
                     colors = fieldColors()
                 )
+
+                Button(
+                    onClick = {
+                        if (!userId.isNullOrEmpty()) {
+                            val user = UserDetailModel(
+                                userId = userId,
+                                name = name,
+                                address = address,
+                                phone = phoneNumber,
+                                maritalStatus = maritalStatus,
+                                cardInfo = cardInfo
+                            )
+                            viewModel.saveDetails(user) { success ->
+                                val msg = if (success) "Personal details updated successfully!" else "Failed to update personal details."
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(context, "User not logged in.", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Personal Info")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -203,15 +256,43 @@ fun SettingsScreenExpandable() {
                     modifier = Modifier.fillMaxWidth(),
                     colors = fieldColors()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm Password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors()
-                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        if (currentUser != null && currentUser.email != null) {
+                            if (currentPassword.isNotBlank() && newPassword.isNotBlank()) {
+                                // Re-authenticate user before updating password
+                                val credential = EmailAuthProvider.getCredential(currentUser.email!!, currentPassword)
+                                currentUser.reauthenticate(credential)
+                                    .addOnCompleteListener { reauthTask ->
+                                        if (reauthTask.isSuccessful) {
+                                            // Re-authentication successful, now update password
+                                            currentUser.updatePassword(newPassword)
+                                                .addOnCompleteListener { updateTask ->
+                                                    if (updateTask.isSuccessful) {
+                                                        Toast.makeText(context, "Password updated successfully!", Toast.LENGTH_SHORT).show()
+                                                        // Clear password fields after successful update
+                                                        currentPassword = ""
+                                                        newPassword = ""
+                                                    } else {
+                                                        Toast.makeText(context, "Failed to update password: ${updateTask.exception?.message}", Toast.LENGTH_LONG).show()
+                                                    }
+                                                }
+                                        } else {
+                                            Toast.makeText(context, "Re-authentication failed. Please check your current password: ${reauthTask.exception?.message}", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                            } else {
+                                Toast.makeText(context, "Please enter both current and new passwords.", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(context, "User not logged in or email not available.", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Update Password")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -280,6 +361,7 @@ fun ExpandableCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedTextColor = Color.White,
@@ -287,7 +369,9 @@ fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = Color.Gray,
     unfocusedContainerColor = Color.DarkGray,
     focusedLabelColor = Color.LightGray,
-    unfocusedLabelColor = Color.Gray
+    unfocusedLabelColor = Color.Gray,
+    focusedBorderColor = Color.LightGray, // Added missing border color
+    unfocusedBorderColor = Color.Gray // Added missing border color
 )
 
 @Preview(showBackground = true)

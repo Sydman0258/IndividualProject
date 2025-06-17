@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
+    id("kotlin-parcelize")
 }
 
 android {
@@ -62,7 +63,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:<compose_version>")
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation ("androidx.compose.runtime:runtime-livedata:1.6.1")
-
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     // Add the dependency for the Firebase Firestore library
     implementation("com.google.firebase:firebase-firestore-ktx"
     )}
