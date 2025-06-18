@@ -98,7 +98,7 @@ fun LoginBody() {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 value = username,
                 onValueChange = { username = it },
-                placeholder = { Text("John Doe", color = Color.White.copy(alpha = 0.5f)) },
+                placeholder = { Text("example@example.com", color = Color.White.copy(alpha = 0.5f)) },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color.White) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,

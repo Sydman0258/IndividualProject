@@ -58,7 +58,6 @@ fun DashboardScreen() {
     val firebaseUser = userViewModel.getCurrentUser()
     val userData by userViewModel.users.observeAsState()
 
-    // Fetch user data on first composition
     LaunchedEffect(Unit) {
         firebaseUser?.uid?.let { uid ->
             userViewModel.getUserFromDatabase(uid) { success, message, _ ->
@@ -114,7 +113,6 @@ fun DashboardScreen() {
             rating = 4.2,
             description = "The Toyota Supra is an iconic sports car, renowned for its inline-six engine, balanced chassis, and distinctive design, offering an exhilarating driving experience."
         ),
-        // Add more cars with descriptions as needed
     )
 
     Column(
@@ -123,9 +121,7 @@ fun DashboardScreen() {
             .background(Color.Black)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // --- START OF MISSING UI ---
 
-        // Top Row (Profile and Settings)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
