@@ -363,8 +363,8 @@ fun BookingScreen(
 
         OutlinedTextField(
             value = cardNumber,
-            onValueChange = { if (it.length <= 19) cardNumber = it.filter { char -> char.isDigit() } }, // Max 19 digits, filter non-digits
-            label = { Text("Card Number", color = Color.Gray) },
+            onValueChange = { if (it.length <= 19) cardNumber = it.filter { char -> char.isDigit() } },
+            label = { Text("Card Number 13-19", color = Color.Gray) },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White, unfocusedTextColor = Color.White,
                 focusedBorderColor = Color.LightGray, unfocusedBorderColor = Color.DarkGray,

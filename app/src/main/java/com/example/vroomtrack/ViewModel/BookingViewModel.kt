@@ -15,12 +15,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Existing BookingUiState
 data class BookingUiState(
     val isLoading: Boolean = false,
     val isBookingSuccessful: Boolean = false,
     val bookingId: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isDeleteSuccessful: Boolean = false,
+    val deletedBookingId: String? = null
 )
 
 class BookingViewModel(
@@ -32,16 +33,42 @@ class BookingViewModel(
     private val _uiState = MutableStateFlow(BookingUiState())
     val uiState: StateFlow<BookingUiState> = _uiState.asStateFlow()
 
+    private val _userBookings = MutableStateFlow<List<BookingModel>>(emptyList())
+    val userBookings: StateFlow<List<BookingModel>> = _userBookings.asStateFlow()
+
+    init {
+        fetchUserBookings()
+    }
+
+    fun fetchUserBookings() {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            _uiState.value = _uiState.value.copy(errorMessage = "User not logged in.")
+            _userBookings.value = emptyList()
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        bookingRepository.getBookingsForUser(currentUser.uid) { bookings, errorMessage ->
+            if (bookings != null) {
+                _userBookings.value = bookings
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = null)
+            } else {
+                _userBookings.value = emptyList()
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = errorMessage ?: "Failed to load bookings.")
+            }
+        }
+    }
+
     fun processBookingWithPayment(
         booking: BookingModel,
         cardNumber: String,
-        expiryDate: String, // MM/YY
+        expiryDate: String,
         cvv: String
     ) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, isBookingSuccessful = false)
 
-            // --- Step 1: Client-side Validation (Basic Simulation) ---
             if (!isValidCardNumber(cardNumber) || !isValidExpiry(expiryDate) || !isValidCvv(cvv)) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -49,7 +76,6 @@ class BookingViewModel(
                 )
                 return@launch
             }
-
 
             delay(1500)
 
@@ -83,6 +109,7 @@ class BookingViewModel(
                                     bookingId = bookingId,
                                     errorMessage = null
                                 )
+                                fetchUserBookings()
                             } else {
                                 _uiState.value = _uiState.value.copy(
                                     isLoading = false,
@@ -102,6 +129,34 @@ class BookingViewModel(
                     isLoading = false,
                     errorMessage = "Payment failed. Please try again or use a different card."
                 )
+            }
+        }
+    }
+
+    fun deleteBooking(bookingId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                isDeleteSuccessful = false,
+                deletedBookingId = null
+            )
+            bookingRepository.deleteBooking(bookingId) { success, errorMessage ->
+                if (success) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isDeleteSuccessful = true,
+                        deletedBookingId = bookingId,
+                        errorMessage = null
+                    )
+                    fetchUserBookings()
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = errorMessage ?: "Failed to delete booking.",
+                        isDeleteSuccessful = false
+                    )
+                }
             }
         }
     }

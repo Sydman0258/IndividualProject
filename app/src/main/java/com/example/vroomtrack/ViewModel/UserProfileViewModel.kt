@@ -12,12 +12,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// Data class to hold the UI state for the User Profile screen
 data class UserProfileUiState(
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
     val user: UserModel? = null,
-    val bookings: List<BookingModel> = emptyList()
+    val bookings: List<BookingModel> = emptyList(),
+    val errorMessage: String? = null,
+    val isDeleteSuccessful: Boolean = false,
+    val deletedBookingId: String? = null
 )
 
 class UserProfileViewModel(
@@ -30,65 +31,90 @@ class UserProfileViewModel(
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
     init {
-        loadUserProfile() // Load data when the ViewModel is created
+        fetchUserProfileData()
     }
 
-    fun loadUserProfile() {
+    private fun fetchUserProfileData() {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = "User not logged in."
+            )
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
         viewModelScope.launch {
-            _uiState.value = UserProfileUiState(isLoading = true, user = _uiState.value.user, bookings = _uiState.value.bookings) // Preserve existing data while loading
-
-            val currentUser = auth.currentUser
-            if (currentUser == null) {
-                _uiState.value = UserProfileUiState(errorMessage = "User not logged in.", isLoading = false)
-                return@launch
-            }
-
-            val userId = currentUser.uid
-
-            var fetchedUser: UserModel? = null
-            var fetchedBookings: List<BookingModel> = emptyList()
-            var userError: String? = null
-            var bookingError: String? = null
-
-            // Fetch user details
-            userRepository.getUserFromDatabase(userId) { success, message, userModel ->
+            userRepository.getUserFromDatabase(currentUser.uid) { success, message, userModel ->
                 if (success && userModel != null) {
-                    fetchedUser = userModel
+                    _uiState.value = _uiState.value.copy(user = userModel)
                 } else {
-                    userError = message
+                    _uiState.value = _uiState.value.copy(errorMessage = message ?: "Failed to load user data.")
                 }
-                // Update state after user data fetch
-                _uiState.value = _uiState.value.copy(
-                    user = fetchedUser,
-                    errorMessage = userError,
-                    isLoading = false // Temporarily set false, will be re-evaluated after bookings
-                )
+                fetchUserBookings(currentUser.uid)
             }
+        }
+    }
 
-            // Fetch booking history
-            bookingRepository.getBookingsByUserId(userId) { success, message, bookingsList ->
-                if (success) {
-                    fetchedBookings = bookingsList.sortedByDescending { it.bookingDate } // Sort by most recent
-                } else {
-                    bookingError = message
-                }
-                // Update state after bookings data fetch
-                val finalErrorMessage = if (userError != null) {
-                    if (bookingError != null) "$userError\n$bookingError" else userError
-                } else {
-                    bookingError
-                }
-
+    private fun fetchUserBookings(userId: String) {
+        bookingRepository.getBookingsForUser(userId) { bookings, errorMessage ->
+            if (bookings != null) {
+                val sortedBookings = bookings.sortedByDescending { it.bookingDate }
                 _uiState.value = _uiState.value.copy(
-                    bookings = fetchedBookings,
-                    errorMessage = finalErrorMessage,
+                    bookings = sortedBookings,
+                    isLoading = false
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = errorMessage ?: "Failed to load bookings.",
                     isLoading = false
                 )
             }
         }
     }
 
+    /**
+     * Deletes a booking from the database and refreshes the booking list.
+     * @param bookingId The ID of the booking to delete.
+     */
+    fun deleteBooking(bookingId: String) { // <--- THIS IS THE FUNCTION
+        _uiState.value = _uiState.value.copy(
+            isLoading = true, // Optionally show loading during delete
+            errorMessage = null,
+            isDeleteSuccessful = false,
+            deletedBookingId = null
+        )
+        bookingRepository.deleteBooking(bookingId) { success, errorMessage ->
+            if (success) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isDeleteSuccessful = true,
+                    deletedBookingId = bookingId,
+                    errorMessage = null
+                )
+                // Refresh the list of bookings after successful deletion
+                auth.currentUser?.uid?.let { userId ->
+                    fetchUserBookings(userId)
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = errorMessage ?: "Failed to delete booking.",
+                    isDeleteSuccessful = false
+                )
+            }
+        }
+    }
+
+
     fun resetErrorState() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+
+
+    fun resetDeleteState() {
+        _uiState.value = _uiState.value.copy(isDeleteSuccessful = false, deletedBookingId = null)
     }
 }

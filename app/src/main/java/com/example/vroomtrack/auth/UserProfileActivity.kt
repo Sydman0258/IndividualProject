@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete // NEW: Import the Delete icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +26,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.vroomtrack.Repository.BookingRepositoryImpl
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
-import com.example.vroomtrack.ViewModel.UserProfileViewModel
+import com.example.vroomtrack.ViewModel.UserProfileViewModel // Make sure this ViewModel is correctly defined
 import com.example.vroomtrack.model.BookingModel
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
@@ -70,13 +71,27 @@ fun UserProfileScreen(
     val context = LocalContext.current
     val uiState by userProfileViewModel.uiState.collectAsState()
 
-    // Show Toast for errors
+    // Show Toast for general errors
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             userProfileViewModel.resetErrorState() // Clear the error after showing
         }
     }
+
+    // NEW: Show Toast for delete success/failure
+    LaunchedEffect(uiState.isDeleteSuccessful, uiState.deletedBookingId) {
+        if (uiState.isDeleteSuccessful) {
+            Toast.makeText(context, "Booking ${uiState.deletedBookingId?.takeLast(6)} deleted successfully!", Toast.LENGTH_SHORT).show()
+            // No need to reset error state here, as it's a success state
+        } else if (uiState.errorMessage != null && uiState.errorMessage!!.contains("Failed to delete booking")) {
+            // This specific check ensures we only show delete-related errors here
+            Toast.makeText(context, "Error deleting booking: ${uiState.errorMessage}", Toast.LENGTH_LONG).show()
+        }
+        // It's good practice to reset these specific delete flags if they exist in your UiState
+        // You might add a resetDeleteState() to your ViewModel if you have more complex logic
+    }
+
 
     Scaffold(
         topBar = {
@@ -167,7 +182,13 @@ fun UserProfileScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(uiState.bookings) { booking ->
-                            BookingHistoryCard(booking)
+                            BookingHistoryCard(
+                                booking = booking,
+                                // NEW: Pass the delete lambda
+                                onDeleteClick = { bookingId ->
+                                    userProfileViewModel.deleteBooking(bookingId)
+                                }
+                            )
                         }
                     }
                 }
@@ -177,18 +198,35 @@ fun UserProfileScreen(
 }
 
 @Composable
-fun BookingHistoryCard(booking: BookingModel) {
+fun BookingHistoryCard(booking: BookingModel, onDeleteClick: (String) -> Unit) { // NEW: Add onDeleteClick parameter
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "${booking.carBrand} ${booking.carName}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
+            Row( // NEW: Add Row to contain title and delete button
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${booking.carBrand} ${booking.carName}",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    modifier = Modifier.weight(1f) // Allow text to take most space
+                )
+                IconButton(
+                    onClick = { onDeleteClick(booking.id) }, // NEW: Call delete lambda
+                    modifier = Modifier.size(24.dp) // Smaller touch target
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete, // Delete icon
+                        contentDescription = "Delete Booking",
+                        tint = Color.Red // Red color for delete
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Booking ID: ${booking.id.takeLast(6)}",
