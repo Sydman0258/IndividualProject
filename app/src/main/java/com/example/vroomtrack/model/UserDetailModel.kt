@@ -5,6 +5,6 @@ data class UserDetailModel(
     val name: String? = null,
     val address: String? = null,
     val phone: String? = null,
-    val maritalStatus: String? = null,
-    val cardInfo: String? = null
+    val maritalStatus: String? = null
+
 )

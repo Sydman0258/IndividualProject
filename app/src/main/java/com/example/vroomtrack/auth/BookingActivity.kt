@@ -1,5 +1,6 @@
 package com.example.vroomtrack.auth
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -22,16 +23,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.vroomtrack.R // Ensure your R file is correctly imported for drawables
-import com.example.vroomtrack.ui.theme.VroomTrackTheme // Your app's theme
-import com.example.vroomtrack.model.BookingModel // Your BookingModel data class
-import com.example.vroomtrack.Repository.BookingRepositoryImpl // Your BookingRepositoryImpl
-import com.example.vroomtrack.Repository.UserRepositoryImpl // Your UserRepositoryImpl
-import com.example.vroomtrack.ViewModel.BookingViewModel // Your BookingViewModel
-import com.example.vroomtrack.ViewModel.BookingUiState // Your BookingUiState data class
+import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import com.example.vroomtrack.model.BookingModel
+import com.example.vroomtrack.Repository.BookingRepositoryImpl
+import com.example.vroomtrack.Repository.UserRepositoryImpl
+import com.example.vroomtrack.ViewModel.BookingViewModel
 
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -41,13 +41,13 @@ import java.util.Date
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.lifecycle.viewmodel.compose.viewModel // For viewModel() Composable function
-import androidx.lifecycle.ViewModelProvider // For custom ViewModel factory
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
 
-import com.google.firebase.auth.FirebaseAuth // Firebase Authentication
+import com.google.firebase.auth.FirebaseAuth
 
-// Assuming Car data class is defined elsewhere, or you can place it here for quick testing:
-// If Car.kt exists as a separate file, remove this definition.
 data class Car(
     val name: String,
     val brand: String,
@@ -63,7 +63,6 @@ class BookingActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Retrieve car details passed via Intent
         val carName = intent.getStringExtra("car_name") ?: "Unknown Car"
         val carBrand = intent.getStringExtra("car_brand") ?: "Unknown Brand"
         val carImageResId = intent.getIntExtra("car_image_res_id", 0)
@@ -80,26 +79,23 @@ class BookingActivity : ComponentActivity() {
             description = carDescription
         )
 
-        // Basic validation for received car data
         if (selectedCar.imageRes == 0 && carName == "Unknown Car") {
             Toast.makeText(this, "Car details incomplete or not found!", Toast.LENGTH_LONG).show()
-            finish() // Close activity if essential data is missing
+            finish()
             return
         }
 
         setContent {
             VroomTrackTheme {
-                // Instantiate BookingViewModel using a ViewModelProvider.Factory
-                // This factory ensures that BookingViewModel receives its required dependencies.
                 val bookingViewModel: BookingViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                             if (modelClass.isAssignableFrom(BookingViewModel::class.java)) {
                                 @Suppress("UNCHECKED_CAST")
                                 return BookingViewModel(
-                                    BookingRepositoryImpl(), // Provides the BookingRepository
-                                    UserRepositoryImpl(),    // Provides the UserRepository
-                                    FirebaseAuth.getInstance() // Provides the FirebaseAuth instance
+                                    BookingRepositoryImpl(),
+                                    UserRepositoryImpl(),
+                                    FirebaseAuth.getInstance()
                                 ) as T
                             }
                             throw IllegalArgumentException("Unknown ViewModel class")
@@ -107,11 +103,15 @@ class BookingActivity : ComponentActivity() {
                     }
                 )
 
-                // The main Composable screen for booking
                 BookingScreen(
                     car = selectedCar,
-                    onBackClick = { finish() }, // Lambda to close the activity
-                    bookingViewModel = bookingViewModel // Pass the ViewModel to the Composable
+                    onBackClick = { finish() },
+                    bookingViewModel = bookingViewModel,
+                    onBookingConfirmedAndNavigateToProfile = {
+                        val intent = Intent(this@BookingActivity, UserProfileActivity::class.java)
+                        startActivity(intent)
+                        finish()
+                    }
                 )
             }
         }
@@ -123,84 +123,74 @@ class BookingActivity : ComponentActivity() {
 fun BookingScreen(
     car: Car,
     onBackClick: () -> Unit,
-    bookingViewModel: BookingViewModel // The ViewModel instance
+    bookingViewModel: BookingViewModel,
+    onBookingConfirmedAndNavigateToProfile: () -> Unit
 ) {
-    val context = LocalContext.current // Context for Toast messages
+    val context = LocalContext.current
 
-    // Observe the UI state from the ViewModel
-    // This recomposes the UI whenever the uiState changes (e.g., loading, success, error)
     val uiState by bookingViewModel.uiState.collectAsState()
 
-    // State for selected start and end dates
     var startDate by remember { mutableStateOf<Calendar?>(null) }
     var endDate by remember { mutableStateOf<Calendar?>(null) }
 
-    // State to control visibility of DatePickerDialogs
     val showStartDatePicker = remember { mutableStateOf(false) }
     val showEndDatePicker = remember { mutableStateOf(false) }
 
-    // DatePickerState for Material3 DatePicker
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = System.currentTimeMillis() // Default to current date
+        initialSelectedDateMillis = System.currentTimeMillis()
     )
 
-    // Calculate booking duration in days
+    // States for Payment Information
+    var cardNumber by remember { mutableStateOf("") }
+    var expiryDate by remember { mutableStateOf("") } // MM/YY
+    var cvv by remember { mutableStateOf("") }
+
     val bookingDurationDays = remember(startDate, endDate) {
         val startCal = startDate
         val endCal = endDate
 
         if (startCal != null && endCal != null && endCal.timeInMillis >= startCal.timeInMillis) {
-            // +1 to include both start and end day
             TimeUnit.MILLISECONDS.toDays(endCal.timeInMillis - startCal.timeInMillis) + 1
         } else {
-            0L // Invalid duration
+            0L
         }
     }
 
-    // Parse daily rate from car string (e.g., "$50/day" -> 50.0)
     val dailyRateValue = remember(car.pricePerDay) {
         car.pricePerDay.replace("$", "").replace("/day", "").trim().toDoubleOrNull() ?: 0.0
     }
 
-    // Calculate total cost
     val totalCost = remember(bookingDurationDays, dailyRateValue) {
         bookingDurationDays * dailyRateValue
     }
 
-    // Scroll state for the column
     val scrollState = rememberScrollState()
 
-    // LaunchedEffect to react to changes in uiState and show Toasts
     LaunchedEffect(uiState) {
         if (uiState.isBookingSuccessful) {
             Toast.makeText(context, "Booking Confirmed! ID: ${uiState.bookingId}", Toast.LENGTH_LONG).show()
-            // Reset ViewModel state after success to allow new bookings or clear UI
             bookingViewModel.resetBookingState()
-            // Optionally navigate back after successful booking:
-            // onBackClick()
+            onBookingConfirmedAndNavigateToProfile()
         } else if (uiState.errorMessage != null) {
             Toast.makeText(context, "Error: ${uiState.errorMessage}", Toast.LENGTH_LONG).show()
-            // Reset error state to allow user to retry
             bookingViewModel.resetBookingState()
         }
     }
 
-    // Main layout column
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .verticalScroll(scrollState) // Make content scrollable
+            .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // Top bar with back button and title
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = { onBackClick() }) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.    ArrowBack,
                     contentDescription = "Back",
                     tint = Color.White
                 )
@@ -216,7 +206,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Car Image
         if (car.imageRes != 0) {
             Image(
                 painter = painterResource(id = car.imageRes),
@@ -228,7 +217,6 @@ fun BookingScreen(
                 contentScale = ContentScale.Crop
             )
         } else {
-            // Placeholder if image resource is not found
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -242,7 +230,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Car Details
         Text(
             text = car.name,
             color = Color.White,
@@ -276,7 +263,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Date Selection Section
         Text(
             text = "Select Booking Dates:",
             color = Color.White,
@@ -285,7 +271,6 @@ fun BookingScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Start Date TextField
         OutlinedTextField(
             value = startDate?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it.time) } ?: "Select Start Date",
             onValueChange = { /* Read-only */ },
@@ -297,7 +282,7 @@ fun BookingScreen(
                     contentDescription = "Select Start Date",
                     tint = Color.White,
                     modifier = Modifier.clickable {
-                        showStartDatePicker.value = true // Show start date picker on click
+                        showStartDatePicker.value = true
                     }
                 )
             },
@@ -316,7 +301,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // End Date TextField
         OutlinedTextField(
             value = endDate?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it.time) } ?: "Select End Date",
             onValueChange = { /* Read-only */ },
@@ -328,7 +312,7 @@ fun BookingScreen(
                     contentDescription = "Select End Date",
                     tint = Color.White,
                     modifier = Modifier.clickable {
-                        showEndDatePicker.value = true // Show end date picker on click
+                        showEndDatePicker.value = true
                     }
                 )
             },
@@ -347,7 +331,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Duration and Cost display
         if (startDate != null && endDate != null && bookingDurationDays > 0) {
             Text(
                 text = "Duration: $bookingDurationDays day(s)",
@@ -370,28 +353,90 @@ fun BookingScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "Payment Information:",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Confirm Booking Button
+        OutlinedTextField(
+            value = cardNumber,
+            onValueChange = { if (it.length <= 19) cardNumber = it.filter { char -> char.isDigit() } }, // Max 19 digits, filter non-digits
+            label = { Text("Card Number", color = Color.Gray) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                focusedBorderColor = Color.LightGray, unfocusedBorderColor = Color.DarkGray,
+                focusedLabelColor = Color.LightGray, unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            OutlinedTextField(
+                value = expiryDate,
+                onValueChange = {
+                    if (it.length <= 5) {
+                        val filtered = it.filter { char -> char.isDigit() || char == '/' }
+                        expiryDate = when {
+                            filtered.length == 2 && expiryDate.length == 1 && !filtered.contains('/') -> "$filtered/"
+                            filtered.length == 2 && expiryDate.length == 3 && filtered.contains('/') -> filtered.substring(0,1)
+                            else -> filtered
+                        }
+                    }
+                },
+                label = { Text("Expiry (MM/YY)", color = Color.Gray) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color.LightGray, unfocusedBorderColor = Color.DarkGray,
+                    focusedLabelColor = Color.LightGray, unfocusedLabelColor = Color.Gray,
+                    cursorColor = Color.White
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            OutlinedTextField(
+                value = cvv,
+                onValueChange = { if (it.length <= 4) cvv = it.filter { char -> char.isDigit() } }, // Max 4 digits
+                label = { Text("CVV", color = Color.Gray) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color.LightGray, unfocusedBorderColor = Color.DarkGray,
+                    focusedLabelColor = Color.LightGray, unfocusedLabelColor = Color.Gray,
+                    cursorColor = Color.White
+                ),
+                modifier = Modifier.weight(0.5f)
+            )
+        }
+
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         Button(
             onClick = {
                 val currentStartDate = startDate
                 val currentEndDate = endDate
 
                 if (currentStartDate != null && currentEndDate != null && bookingDurationDays > 0) {
-                    // Create BookingModel instance. userId and username will be filled by ViewModel.
                     val booking = BookingModel(
-                        userId = "", // Will be populated by ViewModel
-                        username = "", // Will be populated by ViewModel
                         carName = car.name,
                         carBrand = car.brand,
                         carPricePerDay = car.pricePerDay,
                         startDate = currentStartDate.time,
                         endDate = currentEndDate.time,
                         totalCost = totalCost,
-                        bookingDate = Date(), // Current date of booking
-                        status = "Pending" // Initial status
+                        bookingDate = Date(),
+                        status = "Pending"
                     )
-                    bookingViewModel.addBooking(booking) // Trigger booking process in ViewModel
+                    bookingViewModel.processBookingWithPayment(
+                        booking,
+                        cardNumber,
+                        expiryDate,
+                        cvv
+                    )
                 } else {
                     Toast.makeText(context, "Please select valid booking dates.", Toast.LENGTH_SHORT).show()
                 }
@@ -399,19 +444,17 @@ fun BookingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            enabled = !uiState.isLoading, // Disable button when loading
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)) // Green color
+            enabled = !uiState.isLoading,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853))
         ) {
             if (uiState.isLoading) {
-                // Show loading indicator when booking is in progress
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
             } else {
-                Text("Confirm Booking", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Confirm Booking & Pay", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 
-    // Start DatePickerDialog
     if (showStartDatePicker.value) {
         DatePickerDialog(
             onDismissRequest = { showStartDatePicker.value = false },
@@ -435,7 +478,6 @@ fun BookingScreen(
         }
     }
 
-    // End DatePickerDialog
     if (showEndDatePicker.value) {
         DatePickerDialog(
             onDismissRequest = { showEndDatePicker.value = false },

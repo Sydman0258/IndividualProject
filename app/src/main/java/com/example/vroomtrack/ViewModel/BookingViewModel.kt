@@ -5,19 +5,22 @@ import androidx.lifecycle.viewModelScope
 import com.example.vroomtrack.Repository.BookingRepository
 import com.example.vroomtrack.Repository.UserRepository
 import com.example.vroomtrack.model.BookingModel
-import com.example.vroomtrack.model.UserModel
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-
+// Existing BookingUiState
 data class BookingUiState(
     val isLoading: Boolean = false,
     val isBookingSuccessful: Boolean = false,
-    val errorMessage: String? = null,
-    val bookingId: String? = null
+    val bookingId: String? = null,
+    val errorMessage: String? = null
 )
 
 class BookingViewModel(
@@ -29,39 +32,103 @@ class BookingViewModel(
     private val _uiState = MutableStateFlow(BookingUiState())
     val uiState: StateFlow<BookingUiState> = _uiState.asStateFlow()
 
-    fun addBooking(booking: BookingModel) {
+    fun processBookingWithPayment(
+        booking: BookingModel,
+        cardNumber: String,
+        expiryDate: String, // MM/YY
+        cvv: String
+    ) {
         viewModelScope.launch {
-            _uiState.value = BookingUiState(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            val currentUser = auth.currentUser
-            if (currentUser == null) {
-                _uiState.value = BookingUiState(errorMessage = "User not logged in. Please log in to book a car.")
+            // --- Step 1: Client-side Validation (Basic Simulation) ---
+            if (!isValidCardNumber(cardNumber) || !isValidExpiry(expiryDate) || !isValidCvv(cvv)) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Invalid card details. Please check number, expiry (MM/YY), and CVV."
+                )
                 return@launch
             }
 
-            val currentUserId = currentUser.uid
 
-            userRepository.getUserFromDatabase(currentUserId) { success, message, userModel ->
-                if (success && userModel != null) {
-                    val usernameFromModel = userModel.username // <--- ACCESS 'username' (lowercase 'u')
+            delay(1500)
 
-                    val bookingWithUserAndId = booking.copy(
-                        userId = currentUserId,
-                        username = usernameFromModel // <--- USE 'username'
+            val paymentSuccessful = true
+
+            if (paymentSuccessful) {
+                val currentUser = auth.currentUser
+                if (currentUser == null) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "User not logged in. Cannot complete booking."
                     )
-
-                    bookingRepository.addBooking(bookingWithUserAndId) { bookingSuccess, bookingMessage, bookingId ->
-                        if (bookingSuccess) {
-                            _uiState.value = BookingUiState(isBookingSuccessful = true, bookingId = bookingId)
-                        } else {
-                            _uiState.value = BookingUiState(errorMessage = bookingMessage)
-                        }
-                    }
-                } else {
-                    _uiState.value = BookingUiState(errorMessage = "Failed to get user details: $message")
+                    return@launch
                 }
+
+                val userId = currentUser.uid
+
+                userRepository.getUserFromDatabase(userId) { success, message, userModel ->
+                    if (success && userModel != null) {
+                        val finalBooking = booking.copy(
+                            userId = userId,
+                            username = userModel.username,
+                            status = "Confirmed"
+                        )
+
+                        bookingRepository.addBooking(finalBooking) { bookingSuccess, bookingMessage, bookingId ->
+                            if (bookingSuccess) {
+                                _uiState.value = _uiState.value.copy(
+                                    isLoading = false,
+                                    isBookingSuccessful = true,
+                                    bookingId = bookingId,
+                                    errorMessage = null
+                                )
+                            } else {
+                                _uiState.value = _uiState.value.copy(
+                                    isLoading = false,
+                                    errorMessage = "Booking failed after payment: $bookingMessage"
+                                )
+                            }
+                        }
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Failed to fetch user data for booking: $message"
+                        )
+                    }
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Payment failed. Please try again or use a different card."
+                )
             }
         }
+    }
+
+    private fun isValidCardNumber(number: String): Boolean {
+        return number.length in 13..19 && number.all { it.isDigit() }
+    }
+
+    private fun isValidExpiry(expiry: String): Boolean {
+        if (!expiry.matches(Regex("^\\d{2}/\\d{2}$"))) return false
+        val parts = expiry.split("/")
+        val month = parts[0].toIntOrNull() ?: 0
+        val year = parts[1].toIntOrNull() ?: 0
+
+        if (month !in 1..12) return false
+
+        val currentYearLastTwoDigits = SimpleDateFormat("yy", Locale.getDefault()).format(Date()).toInt()
+        val currentMonth = SimpleDateFormat("MM", Locale.getDefault()).format(Date()).toInt()
+
+        if (year < currentYearLastTwoDigits) return false
+        if (year == currentYearLastTwoDigits && month < currentMonth) return false
+
+        return true
+    }
+
+    private fun isValidCvv(cvv: String): Boolean {
+        return cvv.length in 3..4 && cvv.all { it.isDigit() }
     }
 
     fun resetBookingState() {

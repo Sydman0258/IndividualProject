@@ -55,15 +55,10 @@ class SplashScreen : ComponentActivity() {
                     finish()
                 }
                 
-                val navigateToAdminLogin = {
-                    startActivity(Intent(context, AdminLoginActivity::class.java))
-                    finish()
-                }
 
                 SplashContent(
                     onRegisterClick = navigateToRegistration,
-                    onLoginClick = navigateToLogin,
-                    onAdminLoginClick = navigateToAdminLogin
+                    onLoginClick = navigateToLogin
                 )
             }
         }
@@ -74,7 +69,7 @@ class SplashScreen : ComponentActivity() {
 fun SplashContent(
     onRegisterClick: () -> Unit,
     onLoginClick: () -> Unit,
-    onAdminLoginClick: () -> Unit,
+
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -147,16 +142,7 @@ fun SplashContent(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Button(
-                onClick = onAdminLoginClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
-            ) {
-                Text("Admin Login", color = Color.White)
-            }}
+          }
         }
     }
 }
@@ -168,7 +154,6 @@ fun SplashPreview() {
         SplashContent(
             onRegisterClick = {},
             onLoginClick = {},
-            onAdminLoginClick = {}
         )
     }
 }

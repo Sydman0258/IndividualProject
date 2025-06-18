@@ -30,8 +30,8 @@ import com.example.vroomtrack.model.UserDetailModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.example.vroomtrack.ViewModel.UserDetailViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel // Import for viewModel()
-import com.google.firebase.auth.EmailAuthProvider // Import for reauthentication
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.EmailAuthProvider
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,41 +47,36 @@ class SettingsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // Inject ViewModel
+fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) {
     val context = LocalContext.current
     val activity = context as? Activity
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
     val userId = currentUser?.uid
 
-    // State for expandable cards
     var expandedPersonal by remember { mutableStateOf(false) }
     var expandedPassword by remember { mutableStateOf(false) }
     var expandedVersion by remember { mutableStateOf(false) }
 
-    // Personal details states (now initialized from observed ViewModel data)
     var name by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var maritalStatusExpanded by remember { mutableStateOf(false) }
     var maritalStatus by remember { mutableStateOf("Select marital status") }
     val maritalStatusOptions = listOf("Single", "Married", "Divorced", "Widowed")
-    var cardInfo by remember { mutableStateOf("") }
 
-    // Password states
+
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
 
-    // --- Load user details when the screen is first composed or userId changes ---
     LaunchedEffect(userId) {
         if (!userId.isNullOrEmpty()) {
             viewModel.getUserDetails(userId)
         }
     }
 
-    // --- Observe user details from ViewModel and update local states ---
     val userDetails by viewModel.userDetails.collectAsState(initial = null)
 
     LaunchedEffect(userDetails) {
@@ -90,7 +85,7 @@ fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // 
             address = it.address ?: ""
             phoneNumber = it.phone ?: ""
             maritalStatus = it.maritalStatus ?: "Select marital status"
-            cardInfo = it.cardInfo ?: ""
+
         }
     }
 
@@ -99,7 +94,6 @@ fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // 
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // Custom back button row at the very top
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -158,7 +152,6 @@ fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // 
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Marital status dropdown
                 Box {
                     OutlinedTextField(
                         value = maritalStatus,
@@ -198,13 +191,8 @@ fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // 
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = cardInfo,
-                    onValueChange = { cardInfo = it },
-                    label = { Text("Card Info") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors()
-                )
+
+
 
                 Button(
                     onClick = {
@@ -214,8 +202,8 @@ fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // 
                                 name = name,
                                 address = address,
                                 phone = phoneNumber,
-                                maritalStatus = maritalStatus,
-                                cardInfo = cardInfo
+                                maritalStatus = maritalStatus
+
                             )
                             viewModel.saveDetails(user) { success ->
                                 val msg = if (success) "Personal details updated successfully!" else "Failed to update personal details."

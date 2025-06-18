@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.vroomtrack.R // Ensure you have R.drawable.bmwm3e46 for this to work
+import com.example.vroomtrack.R
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
 
 class BMWActivity : ComponentActivity() {

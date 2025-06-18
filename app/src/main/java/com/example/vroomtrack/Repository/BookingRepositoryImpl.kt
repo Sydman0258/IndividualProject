@@ -17,10 +17,10 @@ class BookingRepositoryImpl : BookingRepository {
     }
 
     override fun addBooking(booking: BookingModel, callback: (Boolean, String, String?) -> Unit) {
-        val newBookingRef = bookingsRef.push() // Generates a unique key for the booking
-        val bookingId = newBookingRef.key ?: "" // Get the generated key
+        val newBookingRef = bookingsRef.push()
+        val bookingId = newBookingRef.key ?: ""
 
-        val bookingWithId = booking.copy(id = bookingId) // Update the booking with its ID
+        val bookingWithId = booking.copy(id = bookingId)
 
         newBookingRef.setValue(bookingWithId)
             .addOnSuccessListener {
@@ -33,12 +33,11 @@ class BookingRepositoryImpl : BookingRepository {
             }
     }
 
-    // --- NEW: Implementation for getBookingsByUserId ---
     override fun getBookingsByUserId(
         userId: String,
         callback: (Boolean, String, List<BookingModel>) -> Unit
     ) {
-        bookingsRef.orderByChild("userId").equalTo(userId) // Query bookings by userId
+        bookingsRef.orderByChild("userId").equalTo(userId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val bookings = mutableListOf<BookingModel>()

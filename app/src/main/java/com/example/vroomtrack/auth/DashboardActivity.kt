@@ -35,7 +35,7 @@ import com.example.vroomtrack.R
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.UserViewModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
-import com.example.vroomtrack.Car // Import the Car data class
+import com.example.vroomtrack.Car
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,7 +77,6 @@ fun DashboardScreen() {
         Brand("Nissan", R.drawable.nissan),
         Brand("Porsche", R.drawable.porsche),
         Brand("Audi", R.drawable.audi),
-
     )
 
     val cars = listOf(
@@ -129,7 +128,13 @@ fun DashboardScreen() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable {
+                    val intent = Intent(context, UserProfileActivity::class.java)
+                    context.startActivity(intent)
+                }
+            ) {
                 Image(
                     painter = profileImage,
                     contentDescription = "Profile Image",
@@ -180,7 +185,6 @@ fun DashboardScreen() {
                             .clickable {
                                 val intent = when (brand.name) {
                                     "Toyota" -> Intent(context, ToyotaActivity::class.java)
-
                                     "BMW" -> Intent(context, BMWActivity::class.java)
                                     else -> null
                                 }
@@ -241,7 +245,7 @@ fun DashboardScreen() {
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .padding(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)) // Blue "Book Now" button
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
                         ) {
                             Text(text = "Book Now", color = Color.White)
                         }
@@ -257,7 +261,7 @@ fun DashboardScreen() {
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Brand: ${car.brand}",
+                            text = car.brand,
                             color = Color.Gray,
                             fontSize = 14.sp
                         )

@@ -3,7 +3,7 @@ package com.example.vroomtrack.model
 import java.util.Date
 
 data class BookingModel(
-    var id: String = "", // This will store the Realtime DB push key
+    var id: String = "",
     val userId: String = "",
     val username: String = "",
     val carName: String = "",

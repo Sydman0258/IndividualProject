@@ -24,8 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.vroomtrack.Repository.BookingRepositoryImpl
 import com.example.vroomtrack.Repository.UserRepositoryImpl
-import com.example.vroomtrack.ui.theme.VroomTrackTheme // Your app's theme
-import com.example.vroomtrack.ViewModel.UserProfileViewModel // The ViewModel we just created
+import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import com.example.vroomtrack.ViewModel.UserProfileViewModel
 import com.example.vroomtrack.model.BookingModel
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
@@ -37,7 +37,6 @@ class UserProfileActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             VroomTrackTheme {
-                // Initialize UserProfileViewModel with its dependencies
                 val userProfileViewModel: UserProfileViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
@@ -136,11 +135,7 @@ fun UserProfileScreen(
                                 color = Color.LightGray,
                                 fontSize = 16.sp
                             )
-                            // Add other user details if your UserModel has them (e.g., phone, address)
-                            // Spacer(modifier = Modifier.height(4.dp))
-                            // Text(text = "Phone: ${user.phoneNumber}", color = Color.LightGray, fontSize = 16.sp)
-                            // Spacer(modifier = Modifier.height(4.dp))
-                            // Text(text = "Address: ${user.address}", color = Color.LightGray, fontSize = 16.sp)
+
                         } ?: run {
                             Text(
                                 text = "User data not available.",
@@ -151,7 +146,6 @@ fun UserProfileScreen(
                     }
                 }
 
-                // Booking History Section
                 Text(
                     text = "Booking History",
                     fontSize = 20.sp,
@@ -186,7 +180,7 @@ fun UserProfileScreen(
 fun BookingHistoryCard(booking: BookingModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C)) // Slightly lighter dark grey
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -197,7 +191,7 @@ fun BookingHistoryCard(booking: BookingModel) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Booking ID: ${booking.id.takeLast(6)}", // Show last few chars of ID
+                text = "Booking ID: ${booking.id.takeLast(6)}",
                 color = Color.Gray,
                 fontSize = 12.sp
             )
