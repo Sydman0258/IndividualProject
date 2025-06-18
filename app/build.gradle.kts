@@ -65,6 +65,13 @@ dependencies {
     implementation ("androidx.compose.runtime:runtime-livedata:1.6.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     // Add the dependency for the Firebase Firestore library
-    implementation("com.google.firebase:firebase-firestore-ktx"
-    )}
-
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    
+    // Coil for image loading from URLs (Cloudinary)
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    
+    // HTTP client for API calls
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+}

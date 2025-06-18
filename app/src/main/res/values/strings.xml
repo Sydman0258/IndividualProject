@@ -8,4 +8,6 @@
     <string name="title_activity_toyota">ToyotaActivity</string>
     <string name="title_activity_bmw">BmwActivity</string>
     <string name="title_activity_booking">BookingActivity</string>
+    <string name="title_activity_admin_login">AdminLoginActivity</string>
+    <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
 </resources>

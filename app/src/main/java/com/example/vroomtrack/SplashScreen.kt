@@ -54,10 +54,16 @@ class SplashScreen : ComponentActivity() {
                     startActivity(Intent(context, LoginActivity::class.java))
                     finish()
                 }
+                
+                val navigateToAdminLogin = {
+                    startActivity(Intent(context, AdminLoginActivity::class.java))
+                    finish()
+                }
 
                 SplashContent(
                     onRegisterClick = navigateToRegistration,
-                    onLoginClick = navigateToLogin // Corrected parameter name
+                    onLoginClick = navigateToLogin,
+                    onAdminLoginClick = navigateToAdminLogin
                 )
             }
         }
@@ -67,7 +73,8 @@ class SplashScreen : ComponentActivity() {
 @Composable
 fun SplashContent(
     onRegisterClick: () -> Unit,
-    onLoginClick: () -> Unit, // Corrected parameter name
+    onLoginClick: () -> Unit,
+    onAdminLoginClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -128,7 +135,7 @@ fun SplashContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = onLoginClick, // Corrected parameter name
+                onClick = onLoginClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -136,6 +143,19 @@ fun SplashContent(
                 colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray.copy(alpha = 0.3f))
             ) {
                 Text("Login", color = Color.White)
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Button(
+                onClick = onAdminLoginClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
+            ) {
+                Text("Admin Login", color = Color.White)
             }}
         }
     }
@@ -147,7 +167,8 @@ fun SplashPreview() {
     VroomTrackTheme {
         SplashContent(
             onRegisterClick = {},
-            onLoginClick = {} // Corrected parameter name
+            onLoginClick = {},
+            onAdminLoginClick = {}
         )
     }
 }

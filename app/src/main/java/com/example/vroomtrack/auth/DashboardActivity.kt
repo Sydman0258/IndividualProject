@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,7 +34,10 @@ import com.example.vroomtrack.R
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.UserViewModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
-import com.example.vroomtrack.Car // Import the Car data class
+import com.example.vroomtrack.Car
+import coil.compose.AsyncImage
+import com.example.vroomtrack.Repository.AdminRepositoryImpl
+import com.example.vroomtrack.ViewModel.AdminViewModel
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,9 +56,13 @@ fun DashboardScreen() {
     val context = LocalContext.current
     val repo = remember { UserRepositoryImpl() }
     val userViewModel = remember { UserViewModel(repo) }
+    val adminViewModel = remember { AdminViewModel() }
 
     val firebaseUser = userViewModel.getCurrentUser()
     val userData by userViewModel.users.observeAsState()
+    
+    // Load cars from Firebase instead of hardcoded list
+    val carsFromFirebase by adminViewModel.cars.observeAsState(emptyList())
 
     // Fetch user data on first composition
     LaunchedEffect(Unit) {
@@ -67,6 +73,8 @@ fun DashboardScreen() {
                 }
             }
         }
+        // Load cars from Firebase
+        adminViewModel.loadCars()
     }
 
     val profileImage = painterResource(id = R.drawable.logo)
@@ -78,44 +86,19 @@ fun DashboardScreen() {
         Brand("Nissan", R.drawable.nissan),
         Brand("Porsche", R.drawable.porsche),
         Brand("Audi", R.drawable.audi),
-
     )
 
-    val cars = listOf(
+    // Convert CarModel to Car for compatibility with existing BookingActivity
+    val cars = carsFromFirebase.map { carModel ->
         Car(
-            name = "Audi RS6",
-            brand = "Audi",
-            imageRes = R.drawable.rs6,
-            pricePerDay = "$50/day",
-            rating = 4.5,
-            description = "The Audi RS 6 Avant is a high-performance variant of the A6, known for its powerful engine, quattro all-wheel drive, and spacious wagon body style."
-        ),
-        Car(
-            name = "Nissan GTR",
-            brand = "Nissan",
-            imageRes = R.drawable.nissangtr,
-            pricePerDay = "$70/day",
-            rating = 4.0,
-            description = "The Nissan GT-R, often dubbed 'Godzilla', is a legendary high-performance sports car celebrated for its raw power, advanced all-wheel-drive system, and track capabilities."
-        ),
-        Car(
-            name = "BMW M5",
-            brand = "BMW",
-            imageRes = R.drawable.bmwm5,
-            pricePerDay = "$65/day",
-            rating = 4.8,
-            description = "The BMW M5 is a high-performance version of the BMW 5 Series sedan, known for its powerful V8 engine, luxurious interior, and exceptional driving dynamics."
-        ),
-        Car(
-            name = "Toyota Supra",
-            brand = "Toyota",
-            imageRes = R.drawable.supra,
-            pricePerDay = "$80/day",
-            rating = 4.2,
-            description = "The Toyota Supra is an iconic sports car, renowned for its inline-six engine, balanced chassis, and distinctive design, offering an exhilarating driving experience."
-        ),
-        // Add more cars with descriptions as needed
-    )
+            name = carModel.name,
+            brand = carModel.brand,
+            imageRes = 0, // We'll use imageUrl instead
+            pricePerDay = carModel.pricePerDay,
+            rating = carModel.rating,
+            description = carModel.description
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -123,8 +106,6 @@ fun DashboardScreen() {
             .background(Color.Black)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // --- START OF MISSING UI ---
-
         // Top Row (Profile and Settings)
         Row(
             modifier = Modifier
@@ -134,8 +115,8 @@ fun DashboardScreen() {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = profileImage,
+                AsyncImage(
+                    model = R.drawable.logo,
                     contentDescription = "Profile Image",
                     modifier = Modifier
                         .size(36.dp)
@@ -175,8 +156,8 @@ fun DashboardScreen() {
         ) {
             items(carBrands) { brand ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(id = brand.imageRes),
+                    AsyncImage(
+                        model = brand.imageRes,
                         contentDescription = brand.name,
                         modifier = Modifier
                             .size(80.dp)
@@ -184,7 +165,6 @@ fun DashboardScreen() {
                             .clickable {
                                 val intent = when (brand.name) {
                                     "Toyota" -> Intent(context, ToyotaActivity::class.java)
-
                                     "BMW" -> Intent(context, BMWActivity::class.java)
                                     else -> null
                                 }
@@ -204,7 +184,6 @@ fun DashboardScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-
         Text("Available Cars", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -212,7 +191,7 @@ fun DashboardScreen() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(cars) { car ->
+            items(carsFromFirebase) { carModel ->
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -224,28 +203,31 @@ fun DashboardScreen() {
                             .fillMaxWidth()
                             .height(180.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = car.imageRes),
+                        // Use AsyncImage for Cloudinary URLs
+                        AsyncImage(
+                            model = carModel.imageUrl,
                             contentDescription = "Car Image",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
+                            error = painterResource(id = R.drawable.logo), // Fallback image
+                            placeholder = painterResource(id = R.drawable.logo)
                         )
                         Button(
                             onClick = {
                                 val intent = Intent(context, BookingActivity::class.java).apply {
-                                    putExtra("car_name", car.name)
-                                    putExtra("car_brand", car.brand)
-                                    putExtra("car_image_res_id", car.imageRes)
-                                    putExtra("car_price_per_day", car.pricePerDay)
-                                    putExtra("car_rating", car.rating)
-                                    putExtra("car_description", car.description)
+                                    putExtra("car_name", carModel.name)
+                                    putExtra("car_brand", carModel.brand)
+                                    putExtra("car_image_url", carModel.imageUrl) // Pass URL instead of resource ID
+                                    putExtra("car_price_per_day", carModel.pricePerDay)
+                                    putExtra("car_rating", carModel.rating)
+                                    putExtra("car_description", carModel.description)
                                 }
                                 context.startActivity(intent)
                             },
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .padding(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)) // Blue "Book Now" button
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
                         ) {
                             Text(text = "Book Now", color = Color.White)
                         }
@@ -255,24 +237,24 @@ fun DashboardScreen() {
 
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(
-                            text = car.name,
+                            text = carModel.name,
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Brand: ${car.brand}",
+                            text = "Brand: ${carModel.brand}",
                             color = Color.Gray,
                             fontSize = 14.sp
                         )
                         Text(
-                            text = car.pricePerDay,
+                            text = carModel.pricePerDay,
                             color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Rating: ${car.rating} / 5.0",
+                            text = "Rating: ${carModel.rating} / 5.0",
                             color = Color.Gray,
                             fontSize = 14.sp
                         )
