@@ -25,7 +25,6 @@ class UserViewModel(val repo : UserRepository) : ViewModel(){
         repo.register(email,password,callback)
     }
 
-    //real time database ko function
     fun addUserToDatabase(
         userId: String, model: UserModel,
         callback: (Boolean, String) -> Unit

@@ -27,16 +27,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vroomtrack.R
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
-import com.example.vroomtrack.Car // Ensure this imports your Car data class
+import com.example.vroomtrack.Car
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-// --- IMPORTS FOR SCROLLING ---
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-// --- END IMPORTS FOR SCROLLING ---
 
 
 class BookingActivity : ComponentActivity() {
@@ -122,16 +120,15 @@ fun BookingScreen(
         bookingDurationDays * dailyRateValue
     }
 
-    // --- CHANGE START: Add verticalScroll modifier here ---
-    val scrollState = rememberScrollState() // Create a scroll state
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .verticalScroll(scrollState) // Apply the scroll modifier
+            .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // Top Bar
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -154,7 +151,7 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Car Image
+
         if (car.imageRes != 0) {
             Image(
                 painter = painterResource(id = car.imageRes),
@@ -179,7 +176,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Car Details
         Text(
             text = car.name,
             color = Color.White,
@@ -213,7 +209,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Booking Options Section
         Text(
             text = "Select Booking Dates:",
             color = Color.White,
@@ -222,7 +217,6 @@ fun BookingScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Start Date Picker
         OutlinedTextField(
             value = startDate?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it.time) } ?: "Select Start Date",
             onValueChange = { /* Read-only */ },
@@ -253,7 +247,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // End Date Picker
         OutlinedTextField(
             value = endDate?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it.time) } ?: "Select End Date",
             onValueChange = { /* Read-only */ },
@@ -284,7 +277,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Display Booking Duration and Total Cost
         if (startDate != null && endDate != null && bookingDurationDays > 0) {
             Text(
                 text = "Duration: $bookingDurationDays day(s)",
@@ -308,7 +300,6 @@ fun BookingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Confirm Booking Button
         Button(
             onClick = {
                 val currentStartDate = startDate
@@ -327,8 +318,7 @@ fun BookingScreen(
         ) {
             Text("Confirm Booking", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
-    } // --- CHANGE END: Closing brace of the Column
-    // Date Pickers Dialogs (These remain outside the main scrollable Column)
+    }
     if (showStartDatePicker.value) {
         DatePickerDialog(
             onDismissRequest = { showStartDatePicker.value = false },

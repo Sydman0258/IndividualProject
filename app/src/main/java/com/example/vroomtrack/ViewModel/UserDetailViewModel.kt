@@ -13,7 +13,6 @@ class UserDetailViewModel(
     private val repo: UserDetailRepository = UserDetailRepositoryImpl()
 ) : ViewModel() {
 
-    // MutableStateFlow to hold user details, allowing UI to observe changes
     private val _userDetails = MutableStateFlow<UserDetailModel?>(null)
     val userDetails: StateFlow<UserDetailModel?> = _userDetails
 
@@ -21,7 +20,6 @@ class UserDetailViewModel(
         repo.saveUserDetails(user, onResult)
     }
 
-    // Function to fetch user details and update the StateFlow
     fun getUserDetails(userId: String) {
         viewModelScope.launch {
             repo.getUserDetails(userId) { user ->

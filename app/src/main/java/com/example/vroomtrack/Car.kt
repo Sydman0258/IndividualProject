@@ -13,5 +13,5 @@ data class Car(
     val imageRes: Int,
     val pricePerDay: String,
     val rating: Double,
-    val description: String = "No description available." // Add a description field
+    val description: String =""
 ) : Parcelable

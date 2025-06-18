@@ -166,7 +166,6 @@ fun DashboardScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Brands Section (LazyRow)
         Text("Popular Brands", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -183,12 +182,10 @@ fun DashboardScreen() {
                             .size(80.dp)
                             .clip(CircleShape)
                             .clickable {
-                                // Direct navigation to specific brand activities
                                 val intent = when (brand.name) {
                                     "Toyota" -> Intent(context, ToyotaActivity::class.java)
 
                                     "BMW" -> Intent(context, BMWActivity::class.java)
-                                    // Add more cases for other brand activities if you have them
                                     else -> null
                                 }
                                 intent?.let { context.startActivity(it) }
@@ -207,10 +204,7 @@ fun DashboardScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- END OF MISSING UI ---
 
-
-        // Available Cars Section (LazyColumn) - This part was likely still there
         Text("Available Cars", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -223,7 +217,7 @@ fun DashboardScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
-                        .background(Color(0xFF1C1C1E)) // Slightly lighter dark background for car cards
+                        .background(Color(0xFF1C1C1E))
                 ) {
                     Box(
                         modifier = Modifier
@@ -238,7 +232,6 @@ fun DashboardScreen() {
                         )
                         Button(
                             onClick = {
-                                // Launch BookingActivity and pass individual car properties
                                 val intent = Intent(context, BookingActivity::class.java).apply {
                                     putExtra("car_name", car.name)
                                     putExtra("car_brand", car.brand)

@@ -261,17 +261,14 @@ fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) { // 
                     onClick = {
                         if (currentUser != null && currentUser.email != null) {
                             if (currentPassword.isNotBlank() && newPassword.isNotBlank()) {
-                                // Re-authenticate user before updating password
                                 val credential = EmailAuthProvider.getCredential(currentUser.email!!, currentPassword)
                                 currentUser.reauthenticate(credential)
                                     .addOnCompleteListener { reauthTask ->
                                         if (reauthTask.isSuccessful) {
-                                            // Re-authentication successful, now update password
                                             currentUser.updatePassword(newPassword)
                                                 .addOnCompleteListener { updateTask ->
                                                     if (updateTask.isSuccessful) {
                                                         Toast.makeText(context, "Password updated successfully!", Toast.LENGTH_SHORT).show()
-                                                        // Clear password fields after successful update
                                                         currentPassword = ""
                                                         newPassword = ""
                                                     } else {
@@ -370,8 +367,8 @@ fun fieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = Color.DarkGray,
     focusedLabelColor = Color.LightGray,
     unfocusedLabelColor = Color.Gray,
-    focusedBorderColor = Color.LightGray, // Added missing border color
-    unfocusedBorderColor = Color.Gray // Added missing border color
+    focusedBorderColor = Color.LightGray,
+    unfocusedBorderColor = Color.Gray
 )
 
 @Preview(showBackground = true)
