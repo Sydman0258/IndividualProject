@@ -291,7 +291,7 @@ fun SettingsScreenExpandable(viewModel: UserDetailViewModel = viewModel()) {
                 Text("App Version: 1.0.0", color = Color.LightGray, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "This is a demo version of VroomTrack app.",
+                    "This is a demo version of VroomTrack app made by Siddhartha.",
                     color = Color.LightGray,
                     fontSize = 14.sp
                 )

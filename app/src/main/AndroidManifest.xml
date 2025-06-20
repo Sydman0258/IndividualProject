@@ -13,6 +13,11 @@
         android:theme="@style/Theme.VroomTrack"
         tools:targetApi="31">
         <activity
+            android:name=".auth.AllCarActivity"
+            android:exported="false"
+            android:label="@string/title_activity_all_car"
+            android:theme="@style/Theme.VroomTrack" />
+        <activity
             android:name=".auth.UserProfileActivity"
             android:exported="false"
             android:label="@string/title_activity_user_profile"
@@ -28,7 +33,7 @@
             android:label="@string/title_activity_booking"
             android:theme="@style/Theme.VroomTrack" />
         <activity
-            android:name=".auth.BmwActivity"
+            android:name=".auth.BMWActivity"
             android:exported="false"
             android:label="@string/title_activity_bmw"
             android:theme="@style/Theme.VroomTrack" />

@@ -77,6 +77,7 @@ fun DashboardScreen() {
         Brand("Nissan", R.drawable.nissan),
         Brand("Porsche", R.drawable.porsche),
         Brand("Audi", R.drawable.audi),
+        Brand("BMW",R.drawable.bmwlogo)
     )
 
     val cars = listOf(
@@ -280,6 +281,26 @@ fun DashboardScreen() {
                 }
             }
         }
+
+        Text(
+            text = "See More",
+            color = Color(0xFF1E88E5),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
+                .clickable {
+                    // Navigate to AllCarsActivity
+                    val intent = Intent(context, AllCarActivity::class.java)
+                    context.startActivity(intent)
+                }
+                .wrapContentWidth(Alignment.CenterHorizontally) // Center the text
+        )
+
+
+
+
     }
 }
 
