@@ -36,6 +36,8 @@ import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.UserViewModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
 import com.example.vroomtrack.Car
+import androidx.compose.material3.TextFieldDefaults
+
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +60,8 @@ fun DashboardScreen() {
     val firebaseUser = userViewModel.getCurrentUser()
     val userData by userViewModel.users.observeAsState()
 
+    var searchQuery by remember { mutableStateOf("") }
+
     LaunchedEffect(Unit) {
         firebaseUser?.uid?.let { uid ->
             userViewModel.getUserFromDatabase(uid) { success, message, _ ->
@@ -69,16 +73,6 @@ fun DashboardScreen() {
     }
 
     val profileImage = painterResource(id = R.drawable.logo)
-
-    data class Brand(val name: String, val imageRes: Int)
-
-    val carBrands = listOf(
-        Brand("Toyota", R.drawable.toyota),
-        Brand("Nissan", R.drawable.nissan),
-        Brand("Porsche", R.drawable.porsche),
-        Brand("Audi", R.drawable.audi),
-        Brand("BMW",R.drawable.bmwlogo)
-    )
 
     val cars = listOf(
         Car(
@@ -115,13 +109,16 @@ fun DashboardScreen() {
         ),
     )
 
+    val filteredCars = cars.filter { car ->
+        car.name.contains(searchQuery, ignoreCase = true)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -166,54 +163,31 @@ fun DashboardScreen() {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text("Popular Brands", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(carBrands) { brand ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(id = brand.imageRes),
-                        contentDescription = brand.name,
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                val intent = when (brand.name) {
-                                    "Toyota" -> Intent(context, ToyotaActivity::class.java)
-                                    "BMW" -> Intent(context, BMWActivity::class.java)
-                                    else -> null
-                                }
-                                intent?.let { context.startActivity(it) }
-                            },
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = brand.name,
-                        color = Color.White,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-        }
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1C1C1E), shape = MaterialTheme.shapes.small),
+            placeholder = { Text("Search cars...", color = Color.Gray) },
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(color = Color.White),
+        )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text("Available Cars", color = Color.White, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         ) {
-            items(cars) { car ->
+            items(filteredCars) { car ->
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -228,28 +202,21 @@ fun DashboardScreen() {
                         Image(
                             painter = painterResource(id = car.imageRes),
                             contentDescription = "Car Image",
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable {
+                                    val intent = Intent(context, BookingActivity::class.java).apply {
+                                        putExtra("car_name", car.name)
+                                        putExtra("car_brand", car.brand)
+                                        putExtra("car_image_res_id", car.imageRes)
+                                        putExtra("car_price_per_day", car.pricePerDay)
+                                        putExtra("car_rating", car.rating)
+                                        putExtra("car_description", car.description)
+                                    }
+                                    context.startActivity(intent)
+                                },
                             contentScale = ContentScale.Crop
                         )
-                        Button(
-                            onClick = {
-                                val intent = Intent(context, BookingActivity::class.java).apply {
-                                    putExtra("car_name", car.name)
-                                    putExtra("car_brand", car.brand)
-                                    putExtra("car_image_res_id", car.imageRes)
-                                    putExtra("car_price_per_day", car.pricePerDay)
-                                    putExtra("car_rating", car.rating)
-                                    putExtra("car_description", car.description)
-                                }
-                                context.startActivity(intent)
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
-                        ) {
-                            Text(text = "Book Now", color = Color.White)
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -291,18 +258,17 @@ fun DashboardScreen() {
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
                 .clickable {
-                    // Navigate to AllCarsActivity
                     val intent = Intent(context, AllCarActivity::class.java)
                     context.startActivity(intent)
                 }
-                .wrapContentWidth(Alignment.CenterHorizontally) // Center the text
+                .wrapContentWidth(Alignment.CenterHorizontally)
         )
-
-
-
-
     }
 }
+
+
+
+
 
 @Preview(showBackground = true)
 @Composable
