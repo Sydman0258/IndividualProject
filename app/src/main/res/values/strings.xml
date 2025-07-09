@@ -11,4 +11,6 @@
     <string name="title_activity_profile">ProfileActivity</string>
     <string name="title_activity_user_profile">UserProfileActivity</string>
     <string name="title_activity_all_car">AllCarActivity</string>
+    <string name="title_activity_admin">AdminActivity</string>
+    <string name="title_activity_add_car">AddCarActivity</string>
 </resources>

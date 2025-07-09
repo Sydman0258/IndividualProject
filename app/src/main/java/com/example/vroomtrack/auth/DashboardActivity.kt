@@ -1,17 +1,9 @@
-package com.example.vroomtrack.auth
-
-import android.content.Intent
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -25,37 +17,39 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.vroomtrack.R
-import com.example.vroomtrack.Repository.UserRepositoryImpl
-import com.example.vroomtrack.ViewModel.UserViewModel
-import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.vroomtrack.Car
-import androidx.compose.material3.TextFieldDefaults
-
-
-class DashboardActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            VroomTrackTheme {
-                DashboardScreen()
-            }
-        }
-    }
-}
+import com.example.vroomtrack.Repository.UserRepositoryImpl
+import com.example.vroomtrack.ViewModel.CarViewModel
+import com.example.vroomtrack.ViewModel.UserViewModel
+import com.example.vroomtrack.auth.AllCarActivity
+import com.example.vroomtrack.auth.BookingActivity
+import com.example.vroomtrack.auth.SettingsActivity
+import com.example.vroomtrack.auth.UserProfileActivity
+import com.example.vroomtrack.ui.theme.VroomTrackTheme
 
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(
+    carViewModel: CarViewModel = viewModel(),
+    userViewModel: UserViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(UserViewModel::class.java)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return UserViewModel(UserRepositoryImpl()) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
+            }
+        }
+    )
+) {
     val context = LocalContext.current
-    val repo = remember { UserRepositoryImpl() }
-    val userViewModel = remember { UserViewModel(repo) }
 
     val firebaseUser = userViewModel.getCurrentUser()
     val userData by userViewModel.users.observeAsState()
@@ -72,42 +66,7 @@ fun DashboardScreen() {
         }
     }
 
-    val profileImage = painterResource(id = R.drawable.logo)
-
-    val cars = listOf(
-        Car(
-            name = "Audi RS6",
-            brand = "Audi",
-            imageRes = R.drawable.rs6,
-            pricePerDay = "$50/day",
-            rating = 4.5,
-            description = "The Audi RS 6 Avant is a high-performance variant of the A6, known for its powerful engine, quattro all-wheel drive, and spacious wagon body style."
-        ),
-        Car(
-            name = "Nissan GTR",
-            brand = "Nissan",
-            imageRes = R.drawable.nissangtr,
-            pricePerDay = "$70/day",
-            rating = 4.0,
-            description = "The Nissan GT-R, often dubbed 'Godzilla', is a legendary high-performance sports car celebrated for its raw power, advanced all-wheel-drive system, and track capabilities."
-        ),
-        Car(
-            name = "BMW M5",
-            brand = "BMW",
-            imageRes = R.drawable.bmwm5,
-            pricePerDay = "$65/day",
-            rating = 4.8,
-            description = "The BMW M5 is a high-performance version of the BMW 5 Series sedan, known for its powerful V8 engine, luxurious interior, and exceptional driving dynamics."
-        ),
-        Car(
-            name = "Toyota Supra",
-            brand = "Toyota",
-            imageRes = R.drawable.supra,
-            pricePerDay = "$80/day",
-            rating = 4.2,
-            description = "The Toyota Supra is an iconic sports car, renowned for its inline-six engine, balanced chassis, and distinctive design, offering an exhilarating driving experience."
-        ),
-    )
+    val cars by carViewModel.cars.collectAsState()
 
     val filteredCars = cars.filter { car ->
         car.name.contains(searchQuery, ignoreCase = true)
@@ -129,17 +88,17 @@ fun DashboardScreen() {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable {
-                    val intent = Intent(context, UserProfileActivity::class.java)
+                    val intent = android.content.Intent(context, UserProfileActivity::class.java)
                     context.startActivity(intent)
                 }
             ) {
-                Image(
-                    painter = profileImage,
-                    contentDescription = "Profile Image",
+                // Use your profile image here
+                // Example placeholder circle:
+                Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                        .clip(CircleShape)
+                        .background(Color.Gray)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -153,7 +112,7 @@ fun DashboardScreen() {
             }
 
             IconButton(onClick = {
-                context.startActivity(Intent(context, SettingsActivity::class.java))
+                context.startActivity(android.content.Intent(context, SettingsActivity::class.java))
             }) {
                 Icon(
                     imageVector = Icons.Default.Settings,
@@ -199,23 +158,18 @@ fun DashboardScreen() {
                             .fillMaxWidth()
                             .height(180.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = car.imageRes),
-                            contentDescription = "Car Image",
+                        // Load car.imageUrl dynamically with Coil or similar
+                        // Example placeholder box for image:
+                        Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .background(Color.DarkGray)
                                 .clickable {
-                                    val intent = Intent(context, BookingActivity::class.java).apply {
-                                        putExtra("car_name", car.name)
-                                        putExtra("car_brand", car.brand)
-                                        putExtra("car_image_res_id", car.imageRes)
-                                        putExtra("car_price_per_day", car.pricePerDay)
-                                        putExtra("car_rating", car.rating)
-                                        putExtra("car_description", car.description)
+                                    val intent = android.content.Intent(context, BookingActivity::class.java).apply {
+                                        putExtra("car_id", car.id)
                                     }
                                     context.startActivity(intent)
-                                },
-                            contentScale = ContentScale.Crop
+                                }
                         )
                     }
 
@@ -258,22 +212,10 @@ fun DashboardScreen() {
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
                 .clickable {
-                    val intent = Intent(context, AllCarActivity::class.java)
+                    val intent = android.content.Intent(context, AllCarActivity::class.java)
                     context.startActivity(intent)
                 }
                 .wrapContentWidth(Alignment.CenterHorizontally)
         )
-    }
-}
-
-
-
-
-
-@Preview(showBackground = true)
-@Composable
-fun DashboardScreenPreview() {
-    VroomTrackTheme {
-        DashboardScreen()
     }
 }

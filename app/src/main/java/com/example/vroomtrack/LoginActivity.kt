@@ -30,10 +30,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.vroomtrack.auth.AdminActivity
 import com.example.vroomtrack.auth.DashboardActivity
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.UserViewModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
+
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,9 +79,8 @@ fun LoginBody() {
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Text(
-                text = "VR.O.OM TRACK ",
+                text = "VR.O.OM TRACK",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White
             )
@@ -87,19 +88,25 @@ fun LoginBody() {
             Spacer(modifier = Modifier.height(25.dp))
 
             Text(
-                text = "Login ",
+                text = "Login",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White
             )
+
             Spacer(modifier = Modifier.height(200.dp))
+
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 value = username,
                 onValueChange = { username = it },
-                placeholder = { Text("example@example.com", color = Color.White.copy(alpha = 0.5f)) },
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color.White) },
+                placeholder = {
+                    Text("example@example.com", color = Color.White.copy(alpha = 0.5f))
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.Email, contentDescription = null, tint = Color.White)
+                },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
@@ -116,10 +123,14 @@ fun LoginBody() {
                 shape = RoundedCornerShape(12.dp),
                 value = password,
                 onValueChange = { password = it },
-                placeholder = { Text("*******", color = Color.White.copy(alpha = 0.5f)) },
+                placeholder = {
+                    Text("*******", color = Color.White.copy(alpha = 0.5f))
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 visualTransformation = if (passwordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White) },
+                leadingIcon = {
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White)
+                },
                 trailingIcon = {
                     Icon(
                         painter = painterResource(
@@ -180,7 +191,13 @@ fun LoginBody() {
                                     .apply()
                             }
 
-                            context.startActivity(Intent(context, DashboardActivity::class.java))
+
+                            if (username == "admin@vroom.com" && password == "admin123") {
+                                context.startActivity(Intent(context, AdminActivity::class.java))
+                            } else {
+                                context.startActivity(Intent(context, DashboardActivity::class.java))
+                            }
+
                             activity?.finish()
                         } else {
                             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
