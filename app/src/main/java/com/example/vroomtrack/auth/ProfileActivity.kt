@@ -45,13 +45,14 @@ fun ProfileScreen() {
 
     LaunchedEffect(Unit) {
         firebaseUser?.uid?.let { uid ->
-            userViewModel.getUserFromDatabase(uid) { success, message, _ ->
-                if (!success) {
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            userViewModel.getUserFromDatabase(uid) { userModel, errorMsg ->
+                if (userModel == null) {
+                    Toast.makeText(context, errorMsg ?: "Failed to fetch user data", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
+
 
 
 

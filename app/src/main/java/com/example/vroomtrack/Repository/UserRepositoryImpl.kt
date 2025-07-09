@@ -11,11 +11,9 @@ import com.google.firebase.database.ValueEventListener
 
 class UserRepositoryImpl : UserRepository {
 
-    val auth: FirebaseAuth = FirebaseAuth.getInstance()
-
-    val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-
-    val ref: DatabaseReference = database.reference.child("users")
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    private val ref: DatabaseReference = database.reference.child("users")
 
     override fun login(
         email: String,
@@ -25,11 +23,10 @@ class UserRepositoryImpl : UserRepository {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { res ->
                 if (res.isSuccessful) {
-                    callback(true, "Login successfull")
+                    callback(true, "Login successful")
                 } else {
-                    callback(false, "${res.exception?.message}")
+                    callback(false, res.exception?.message ?: "Login failed")
                 }
-
             }
     }
 
@@ -41,17 +38,10 @@ class UserRepositoryImpl : UserRepository {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { res ->
                 if (res.isSuccessful) {
-                    callback(
-                        true, "Registration successfull",
-                        "${auth.currentUser?.uid}"
-                    )
+                    callback(true, "Registration successful", auth.currentUser?.uid ?: "")
                 } else {
-                    callback(
-                        false,
-                        "${res.exception?.message}", ""
-                    )
+                    callback(false, res.exception?.message ?: "Registration failed", "")
                 }
-
             }
     }
 
@@ -64,8 +54,7 @@ class UserRepositoryImpl : UserRepository {
             if (it.isSuccessful) {
                 callback(true, "User successfully added")
             } else {
-                callback(true, "${it.exception?.message}")
-
+                callback(false, it.exception?.message ?: "Failed to add user")
             }
         }
     }
@@ -79,9 +68,8 @@ class UserRepositoryImpl : UserRepository {
                 if (res.isSuccessful) {
                     callback(true, "Reset email sent to $email")
                 } else {
-                    callback(false, "${res.exception?.message}")
+                    callback(false, res.exception?.message ?: "Failed to send reset email")
                 }
-
             }
     }
 
@@ -92,9 +80,9 @@ class UserRepositoryImpl : UserRepository {
     override fun logout(callback: (Boolean, String) -> Unit) {
         try {
             auth.signOut()
-            callback(true, "Logout successfully")
+            callback(true, "Logout successful")
         } catch (e: Exception) {
-            callback(true, "${e.message}")
+            callback(false, e.message ?: "Logout failed")
         }
     }
 
@@ -123,7 +111,6 @@ class UserRepositoryImpl : UserRepository {
             })
     }
 
-
     override fun editProfile(
         userId: String,
         data: MutableMap<String, Any?>,
@@ -131,10 +118,9 @@ class UserRepositoryImpl : UserRepository {
     ) {
         ref.child(userId).updateChildren(data).addOnCompleteListener {
             if (it.isSuccessful) {
-                callback(true, "Profile updated ")
+                callback(true, "Profile updated")
             } else {
-                callback(true, "${it.exception?.message}")
-
+                callback(false, it.exception?.message ?: "Failed to update profile")
             }
         }
     }
@@ -147,10 +133,8 @@ class UserRepositoryImpl : UserRepository {
             if (it.isSuccessful) {
                 callback(true, "Account deleted successfully")
             } else {
-                callback(true, "${it.exception?.message}")
-
+                callback(false, it.exception?.message ?: "Failed to delete account")
             }
         }
     }
-
 }

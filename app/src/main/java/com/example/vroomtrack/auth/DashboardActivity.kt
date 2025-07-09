@@ -1,4 +1,11 @@
+package com.example.vroomtrack.auth
+
+import android.content.Intent
+import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,15 +31,26 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.vroomtrack.Car
+import coil.compose.AsyncImage
+import androidx.compose.material3.TextFieldDefaults
+
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.CarViewModel
 import com.example.vroomtrack.ViewModel.UserViewModel
-import com.example.vroomtrack.auth.AllCarActivity
-import com.example.vroomtrack.auth.BookingActivity
-import com.example.vroomtrack.auth.SettingsActivity
-import com.example.vroomtrack.auth.UserProfileActivity
+import com.example.vroomtrack.model.UserModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
+
+class DashboardActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            VroomTrackTheme {
+                DashboardScreen()
+            }
+        }
+    }
+}
 
 @Composable
 fun DashboardScreen(
@@ -53,23 +71,22 @@ fun DashboardScreen(
 
     val firebaseUser = userViewModel.getCurrentUser()
     val userData by userViewModel.users.observeAsState()
-
     var searchQuery by remember { mutableStateOf("") }
+    val cars by carViewModel.cars.collectAsState()
 
+    // Load user data
     LaunchedEffect(Unit) {
         firebaseUser?.uid?.let { uid ->
-            userViewModel.getUserFromDatabase(uid) { success, message, _ ->
-                if (!success) {
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            userViewModel.getUserFromDatabase(uid) { userModel, errorMsg ->
+                if (userModel == null) {
+                    Toast.makeText(context, errorMsg ?: "Failed to fetch user data", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
-    val cars by carViewModel.cars.collectAsState()
-
-    val filteredCars = cars.filter { car ->
-        car.name.contains(searchQuery, ignoreCase = true)
+    val filteredCars = cars.filter {
+        it.name.contains(searchQuery, ignoreCase = true)
     }
 
     Column(
@@ -78,6 +95,7 @@ fun DashboardScreen(
             .background(Color.Black)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
+        // Header with user profile and settings
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -88,12 +106,9 @@ fun DashboardScreen(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable {
-                    val intent = android.content.Intent(context, UserProfileActivity::class.java)
-                    context.startActivity(intent)
+                    context.startActivity(Intent(context, UserProfileActivity::class.java))
                 }
             ) {
-                // Use your profile image here
-                // Example placeholder circle:
                 Box(
                     modifier = Modifier
                         .size(36.dp)
@@ -112,7 +127,7 @@ fun DashboardScreen(
             }
 
             IconButton(onClick = {
-                context.startActivity(android.content.Intent(context, SettingsActivity::class.java))
+                context.startActivity(Intent(context, SettingsActivity::class.java))
             }) {
                 Icon(
                     imageVector = Icons.Default.Settings,
@@ -124,16 +139,32 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Search field
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF1C1C1E), shape = MaterialTheme.shapes.small),
-            placeholder = { Text("Search cars...", color = Color.Gray) },
+                .fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = "Search cars...",
+                    color = Color.Gray
+                )
+            },
             singleLine = true,
             textStyle = LocalTextStyle.current.copy(color = Color.White),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.White,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = Color.White,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedPlaceholderColor = Color.Gray,
+                unfocusedPlaceholderColor = Color.Gray
+            )
         )
+
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -153,25 +184,21 @@ fun DashboardScreen(
                         .clip(MaterialTheme.shapes.medium)
                         .background(Color(0xFF1C1C1E))
                 ) {
-                    Box(
+                    // Car image from URL
+                    AsyncImage(
+                        model = car.imageUrl,
+                        contentDescription = "Car Image",
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(180.dp)
-                    ) {
-                        // Load car.imageUrl dynamically with Coil or similar
-                        // Example placeholder box for image:
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.DarkGray)
-                                .clickable {
-                                    val intent = android.content.Intent(context, BookingActivity::class.java).apply {
-                                        putExtra("car_id", car.id)
-                                    }
-                                    context.startActivity(intent)
+                            .clickable {
+                                val intent = Intent(context, BookingActivity::class.java).apply {
+                                    putExtra("car_id", car.id)
                                 }
-                        )
-                    }
+                                context.startActivity(intent)
+                            },
+                        contentScale = ContentScale.Crop
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -212,7 +239,7 @@ fun DashboardScreen(
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
                 .clickable {
-                    val intent = android.content.Intent(context, AllCarActivity::class.java)
+                    val intent = Intent(context, AllCarActivity::class.java)
                     context.startActivity(intent)
                 }
                 .wrapContentWidth(Alignment.CenterHorizontally)

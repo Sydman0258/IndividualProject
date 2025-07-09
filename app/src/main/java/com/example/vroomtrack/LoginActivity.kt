@@ -1,5 +1,6 @@
 package com.example.vroomtrack
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -30,10 +31,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.vroomtrack.auth.AdminActivity
-import com.example.vroomtrack.auth.DashboardActivity
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.UserViewModel
+import com.example.vroomtrack.auth.AdminActivity
+import com.example.vroomtrack.auth.DashboardActivity
+import com.example.vroomtrack.model.UserModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
 
 class LoginActivity : ComponentActivity() {
@@ -48,111 +50,98 @@ class LoginActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun LoginBody() {
     val repo = remember { UserRepositoryImpl() }
     val userViewModel = remember { UserViewModel(repo) }
 
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisibility by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scrollState = rememberScrollState()
     val context = LocalContext.current
     val activity = context as? Activity
-    val sharedPreferences = context.getSharedPreferences("User", Context.MODE_PRIVATE)
+    val sharedPreferences = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE)
 
-    username = sharedPreferences.getString("email", "") ?: ""
-    password = sharedPreferences.getString("password", "") ?: ""
+    // Load saved credentials on launch
+    LaunchedEffect(Unit) {
+        email = sharedPreferences.getString("email", "") ?: ""
+        password = sharedPreferences.getString("password", "") ?: ""
+        rememberMe = email.isNotEmpty() && password.isNotEmpty()
+    }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { padding ->
+    Scaffold {
         Column(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .background(Color.Black)
-                .padding(horizontal = 16.dp, vertical = 24.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(Modifier.height(40.dp))
+
             Text(
-                text = "VR.O.OM TRACK",
+                "VR.O.OM TRACK",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(25.dp))
-
-            Text(
-                text = "Login",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(200.dp))
+            Spacer(Modifier.height(30.dp))
 
             OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                placeholder = { Text("example@example.com", color = Color.White.copy(alpha = 0.5f)) },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color.White) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                value = username,
-                onValueChange = { username = it },
-                placeholder = {
-                    Text("example@example.com", color = Color.White.copy(alpha = 0.5f))
-                },
-                leadingIcon = {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = Color.White)
-                },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
                     focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.Gray,
                     cursorColor = Color.White
-                )
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
                 value = password,
                 onValueChange = { password = it },
-                placeholder = {
-                    Text("*******", color = Color.White.copy(alpha = 0.5f))
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = if (passwordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                leadingIcon = {
-                    Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White)
-                },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("*******", color = Color.White.copy(alpha = 0.5f)) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White) },
                 trailingIcon = {
                     Icon(
-                        painter = painterResource(
-                            if (passwordVisibility)
+                        painterResource(
+                            if (passwordVisible)
                                 R.drawable.baseline_visibility_24
-                            else R.drawable.baseline_visibility_off_24
+                            else
+                                R.drawable.baseline_visibility_off_24
                         ),
                         contentDescription = null,
-                        modifier = Modifier.clickable { passwordVisibility = !passwordVisibility },
+                        modifier = Modifier.clickable { passwordVisible = !passwordVisible },
                         tint = Color.White
                     )
                 },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
                     focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.Gray,
                     cursorColor = Color.White
-                )
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -163,64 +152,81 @@ fun LoginBody() {
                     Checkbox(
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = Color.Green,
-                            checkmarkColor = Color.White
-                        )
+                        colors = CheckboxDefaults.colors(checkedColor = Color.Green, checkmarkColor = Color.White)
                     )
-                    Text(text = "Remember me", color = Color.White)
+                    Text("Remember me", color = Color.White)
                 }
 
                 Text(
-                    text = "Forget Password",
-                    modifier = Modifier.clickable { },
-                    color = Color.White
+                    "Forget Password",
+                    color = Color.White,
+                    modifier = Modifier.clickable {
+                        Toast.makeText(context, "Forget password clicked", Toast.LENGTH_SHORT).show()
+                        // Implement forget password flow if desired
+                    }
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
 
             Button(
                 onClick = {
-                    userViewModel.login(username, password) { success, message ->
+                    if (email.isBlank() || password.isBlank()) {
+                        Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    userViewModel.login(email, password) { success, message ->
                         if (success) {
-                            if (rememberMe) {
-                                sharedPreferences.edit()
-                                    .putString("email", username)
-                                    .putString("password", password)
-                                    .apply()
-                            }
+                            val currentUser = userViewModel.getCurrentUser()
+                            if (currentUser != null) {
+                                userViewModel.getUserFromDatabase(currentUser.uid) { userModel, errorMsg ->
+                                    if (userModel != null) {
+                                        // Save credentials if rememberMe checked
+                                        if (rememberMe) {
+                                            sharedPreferences.edit()
+                                                .putString("email", email)
+                                                .putString("password", password)
+                                                .apply()
+                                        } else {
+                                            sharedPreferences.edit()
+                                                .remove("email")
+                                                .remove("password")
+                                                .apply()
+                                        }
 
-
-                            if (username == "admin@vroom.com" && password == "admin123") {
-                                context.startActivity(Intent(context, AdminActivity::class.java))
+                                        if (userModel.admin) {
+                                            context.startActivity(Intent(context, AdminActivity::class.java))
+                                        } else {
+                                            context.startActivity(Intent(context, DashboardActivity::class.java))
+                                        }
+                                        activity?.finish()
+                                    } else {
+                                        Toast.makeText(context, errorMsg ?: "Failed to fetch user details", Toast.LENGTH_LONG).show()
+                                    }
+                                }
                             } else {
-                                context.startActivity(Intent(context, DashboardActivity::class.java))
+                                Toast.makeText(context, "User not logged in", Toast.LENGTH_LONG).show()
                             }
-
-                            activity?.finish()
                         } else {
                             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.LightGray,
-                    contentColor = Color.Black
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray, contentColor = Color.Black),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Login")
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Don't have an account? Signup",
+                "Don't have an account? Signup",
+                color = Color.White,
                 modifier = Modifier.clickable {
                     context.startActivity(Intent(context, RegistrationActivity::class.java))
-                },
-                color = Color.White
+                }
             )
         }
     }
@@ -228,7 +234,7 @@ fun LoginBody() {
 
 @Preview(showBackground = true)
 @Composable
-fun LoginPreviewBody() {
+fun LoginPreview() {
     VroomTrackTheme {
         LoginBody()
     }

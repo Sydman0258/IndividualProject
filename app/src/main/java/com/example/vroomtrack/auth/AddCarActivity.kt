@@ -1,4 +1,4 @@
-package com.example.vroomtrack
+package com.example.vroomtrack.auth
 
 // Android imports
 import android.app.Activity
@@ -12,7 +12,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -68,10 +70,7 @@ class AddCarActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Uploads image Uri to Cloudinary using OkHttp and the unsigned upload preset.
-     * On success, sets uploadedImageUrl to the Cloudinary image URL.
-     */
+
     private fun uploadImageToCloudinary(uri: Uri) {
         val context = this
 
@@ -156,15 +155,19 @@ fun AddEditCarScreen(
         }
     ) { padding ->
 
+        val scrollState = rememberScrollState()
+
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .background(Color(0xFFF0F0F0))
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
-        ) {
+        )
+        {
 
             Text("Enter Car Details", style = MaterialTheme.typography.headlineSmall, color = Color.Black)
 

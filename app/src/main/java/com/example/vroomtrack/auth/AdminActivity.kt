@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage // For loading images from URL
-import com.example.vroomtrack.AddCarActivity
 import com.example.vroomtrack.ViewModel.CarViewModel
 import com.example.vroomtrack.model.CarModel // <-- Updated import
 import com.example.vroomtrack.ui.theme.VroomTrackTheme

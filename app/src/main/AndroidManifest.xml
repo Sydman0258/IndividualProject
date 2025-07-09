@@ -42,16 +42,7 @@
             android:exported="false"
             android:label="@string/title_activity_booking"
             android:theme="@style/Theme.VroomTrack" />
-        <activity
-            android:name=".auth.BMWActivity"
-            android:exported="false"
-            android:label="@string/title_activity_bmw"
-            android:theme="@style/Theme.VroomTrack" />
-        <activity
-            android:name=".auth.ToyotaActivity"
-            android:exported="false"
-            android:label="@string/title_activity_toyota"
-            android:theme="@style/Theme.VroomTrack" />
+
         <activity
             android:name=".auth.SettingsActivity"
             android:exported="false"
