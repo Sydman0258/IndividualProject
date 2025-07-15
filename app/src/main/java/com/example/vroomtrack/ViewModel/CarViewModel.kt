@@ -74,7 +74,7 @@ class CarViewModel(private val repository: CarRepository = CarRepositoryImpl()) 
         pricePerDay: String,
         rating: Double,
         description: String,
-        isAvailable: Boolean, // Include isAvailable if it can be updated
+        available: Boolean, // Include isAvailable if it can be updated
         onResult: (Boolean, String) -> Unit
     ) {
         viewModelScope.launch {
@@ -91,7 +91,7 @@ class CarViewModel(private val repository: CarRepository = CarRepositoryImpl()) 
                 pricePerDay = pricePerDay,
                 rating = rating,
                 description = description,
-                isAvailable = isAvailable, // Pass the current availability
+                available = available, // Pass the current availability
                 createdAt = _selectedCar.value?.createdAt ?: System.currentTimeMillis() // Preserve original creation time
             )
             val success = repository.updateCar(updatedCar)

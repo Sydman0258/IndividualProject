@@ -6,6 +6,7 @@ data class BookingModel(
     var id: String = "",
     val userId: String = "",
     val username: String = "",
+    val carId: String = "",              // <-- Add this!
     val carName: String = "",
     val carBrand: String = "",
     val carPricePerDay: String = "",
@@ -13,6 +14,5 @@ data class BookingModel(
     val endDate: Date? = null,
     val totalCost: Double = 0.0,
     val bookingDate: Date = Date(),
-
     val status: String = "Pending"
 )

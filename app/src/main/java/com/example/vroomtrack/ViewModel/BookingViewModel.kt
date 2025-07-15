@@ -103,6 +103,13 @@ class BookingViewModel(
 
                         bookingRepository.addBooking(finalBooking) { bookingSuccess, bookingMessage, bookingId ->
                             if (bookingSuccess) {
+                                // Update car availability to false (unavailable)
+                                bookingRepository.updateCarAvailability(finalBooking.carId ?: "", false) { success, errorMsg ->
+                                    if (!success) {
+                                        // Optional: handle error updating availability
+                                    }
+                                }
+
                                 _uiState.value = _uiState.value.copy(
                                     isLoading = false,
                                     isBookingSuccessful = true,

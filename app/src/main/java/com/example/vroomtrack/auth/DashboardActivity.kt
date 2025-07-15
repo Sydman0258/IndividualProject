@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,13 +32,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import androidx.compose.material3.TextFieldDefaults
-
+import com.example.vroomtrack.LoginActivity
 import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.CarViewModel
 import com.example.vroomtrack.ViewModel.UserViewModel
-import com.example.vroomtrack.model.UserModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import com.google.firebase.auth.FirebaseAuth
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,7 +94,7 @@ fun DashboardScreen(
             .background(Color.Black)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Header with user profile and settings
+        // Header with user profile, settings, and logout
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,14 +125,31 @@ fun DashboardScreen(
                 )
             }
 
-            IconButton(onClick = {
-                context.startActivity(Intent(context, SettingsActivity::class.java))
-            }) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = Color.White
-                )
+            Row {
+                IconButton(onClick = {
+                    context.startActivity(Intent(context, SettingsActivity::class.java))
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = Color.White
+                    )
+                }
+
+                IconButton(onClick = {
+                    FirebaseAuth.getInstance().signOut()
+                    Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                    context.startActivity(Intent(context, LoginActivity::class.java))
+                    if (context is ComponentActivity) {
+                        context.finish()
+                    }
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = Color.White
+                    )
+                }
             }
         }
 
@@ -143,13 +159,9 @@ fun DashboardScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             placeholder = {
-                Text(
-                    text = "Search cars...",
-                    color = Color.Gray
-                )
+                Text(text = "Search cars...", color = Color.Gray)
             },
             singleLine = true,
             textStyle = LocalTextStyle.current.copy(color = Color.White),
@@ -163,8 +175,6 @@ fun DashboardScreen(
                 unfocusedPlaceholderColor = Color.Gray
             )
         )
-
-
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -184,7 +194,6 @@ fun DashboardScreen(
                         .clip(MaterialTheme.shapes.medium)
                         .background(Color(0xFF1C1C1E))
                 ) {
-                    // Car image from URL
                     AsyncImage(
                         model = car.imageUrl,
                         contentDescription = "Car Image",
@@ -194,6 +203,12 @@ fun DashboardScreen(
                             .clickable {
                                 val intent = Intent(context, BookingActivity::class.java).apply {
                                     putExtra("car_id", car.id)
+                                    putExtra("car_name", car.name)
+                                    putExtra("car_brand", car.brand)
+                                    putExtra("car_image_url", car.imageUrl)
+                                    putExtra("car_price_per_day", car.pricePerDay)
+                                    putExtra("car_rating", car.rating)
+                                    putExtra("car_description", car.description)
                                 }
                                 context.startActivity(intent)
                             },

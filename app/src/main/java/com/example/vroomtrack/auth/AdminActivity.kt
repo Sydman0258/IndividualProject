@@ -183,11 +183,10 @@ fun CarListItem(car: CarModel, onEditClick: (CarModel) -> Unit, onDeleteClick: (
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
-                // Optionally display description or availability
                 Text(
-                    text = if (car.isAvailable) "Available" else "Not Available",
+                    text = if (car.available) "Available" else "Not Available",
                     fontSize = 12.sp,
-                    color = if (car.isAvailable) Color.Green else Color.Red
+                    color = if (car.available) Color.Green else Color.Red
                 )
             }
             Row {
