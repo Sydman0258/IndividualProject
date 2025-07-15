@@ -305,7 +305,14 @@ fun BookingScreen(
         Button(
             onClick = {
                 if (startDate != null && endDate != null && bookingDurationDays > 0) {
+                    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                    if (currentUserId.isEmpty()) {
+                        Toast.makeText(context, "User not logged in. Cannot book.", Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
                     val booking = BookingModel(
+                        userId = currentUserId,
+                        carId = car.id,
                         carName = car.name,
                         carBrand = car.brand,
                         carPricePerDay = car.pricePerDay,
