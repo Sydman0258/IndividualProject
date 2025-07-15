@@ -14,10 +14,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert // For the dropdown icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,12 +32,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage // For loading images from URL
+import coil.compose.AsyncImage
 import com.example.vroomtrack.ViewModel.CarViewModel
-import com.example.vroomtrack.model.CarModel // <-- Updated import
+import com.example.vroomtrack.model.CarModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.text.style.TextAlign
-
+import com.example.vroomtrack.LoginActivity
 
 class AdminActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,7 +46,13 @@ class AdminActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             VroomTrackTheme {
-                AdminScreen()
+                AdminScreen(onLogout = {
+                    // Handle logout logic here
+                    FirebaseAuth.getInstance().signOut()
+                    val intent = Intent(this, LoginActivity::class.java) // Assuming LoginActivity is your login screen
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                })
             }
         }
     }
@@ -49,16 +60,43 @@ class AdminActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminScreen() {
+fun AdminScreen(onLogout: () -> Unit) {
     val context = LocalContext.current
     val carViewModel: CarViewModel = viewModel()
     val cars by carViewModel.cars.collectAsState()
+
+    var showMenu by remember { mutableStateOf(false) } // State for dropdown menu visibility
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Admin Dashboard") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1E88E5), titleContentColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1E88E5), titleContentColor = Color.White),
+                actions = {
+                    // Dropdown menu icon
+                    IconButton(onClick = { showMenu = !showMenu }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More actions",
+                            tint = Color.White
+                        )
+                    }
+
+                    // DropdownMenu
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                                  // Separator
+                        DropdownMenuItem(
+                            text = { Text("Logout") },
+                            onClick = {
+                                onLogout()
+                                showMenu = false
+                            }
+                        )
+                    }
+                }
             )
         }
     ) { padding ->
@@ -183,6 +221,7 @@ fun CarListItem(car: CarModel, onEditClick: (CarModel) -> Unit, onDeleteClick: (
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
+                // Assuming car.available is a Boolean property in CarModel
                 Text(
                     text = if (car.available) "Available" else "Not Available",
                     fontSize = 12.sp,
@@ -206,6 +245,6 @@ fun CarListItem(car: CarModel, onEditClick: (CarModel) -> Unit, onDeleteClick: (
 @Composable
 fun AdminScreenPreview() {
     VroomTrackTheme {
-        AdminScreen()
+        AdminScreen(onLogout = {}) // Provide an empty lambda for preview
     }
 }
