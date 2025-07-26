@@ -6,9 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateDpAsState // Import for animating Dp values
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.LinearOutSlowInEasing // Good easing for slide animation
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,11 +17,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset // Import for offset modifier
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class SplashScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,13 +83,16 @@ fun SplashContent(
     modifier: Modifier = Modifier
 ) {
     var startAnimation by remember { mutableStateOf(false) }
+    var showLoader by remember { mutableStateOf(false) }
+    var isNavigating by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
 
     val buttonAlpha by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(durationMillis = 1500)
     )
 
-    // Animate the Y offset for the text
     val textYOffset by animateDpAsState(
         targetValue = if (startAnimation) (-150).dp else 0.dp,
         animationSpec = tween(durationMillis = 1000, easing = LinearOutSlowInEasing)
@@ -135,7 +141,6 @@ fun SplashContent(
             )
         }
 
-
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -144,7 +149,29 @@ fun SplashContent(
                 .alpha(buttonAlpha)
         ) {
             Button(
-                onClick = onRegisterClick,
+                onClick = {
+                    isNavigating = true
+                    showLoader = false
+
+                    coroutineScope.launch {
+                        val threshold = 2000L
+                        val simulatedDelay = 3500L
+                        val startTime = System.currentTimeMillis()
+
+                        val job = launch {
+                            delay(simulatedDelay) // simulate slow network
+                        }
+
+                        delay(threshold)
+                        if (job.isActive) {
+                            showLoader = true
+                        }
+
+                        job.join()
+                        showLoader = false
+                        onRegisterClick()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -157,7 +184,29 @@ fun SplashContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = onLoginClick,
+                onClick = {
+                    isNavigating = true
+                    showLoader = false
+
+                    coroutineScope.launch {
+                        val threshold = 2000L
+                        val simulatedDelay = 1500L
+                        val startTime = System.currentTimeMillis()
+
+                        val job = launch {
+                            delay(simulatedDelay) // simulate faster network
+                        }
+
+                        delay(threshold)
+                        if (job.isActive) {
+                            showLoader = true
+                        }
+
+                        job.join()
+                        showLoader = false
+                        onLoginClick()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -167,16 +216,16 @@ fun SplashContent(
                 Text("Login", color = Color.White)
             }
         }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun SplashPreview() {
-    VroomTrackTheme {
-        SplashContent(
-            onRegisterClick = {},
-            onLoginClick = {},
-        )
+        if (showLoader && isNavigating) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color.White)
+            }
+        }
     }
 }

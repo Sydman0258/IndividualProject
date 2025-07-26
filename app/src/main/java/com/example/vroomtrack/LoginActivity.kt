@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -35,8 +36,8 @@ import com.example.vroomtrack.Repository.UserRepositoryImpl
 import com.example.vroomtrack.ViewModel.UserViewModel
 import com.example.vroomtrack.auth.AdminActivity
 import com.example.vroomtrack.auth.DashboardActivity
-import com.example.vroomtrack.model.UserModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
+import androidx.core.content.edit
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +51,7 @@ class LoginActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun LoginBody() {
@@ -72,7 +74,26 @@ fun LoginBody() {
         rememberMe = email.isNotEmpty() && password.isNotEmpty()
     }
 
-    Scaffold {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Login", color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        val intent = Intent(context, SplashScreen::class.java)
+                        context.startActivity(intent)
+                        (context as? ComponentActivity)?.finish()                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+            )
+        }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -162,7 +183,6 @@ fun LoginBody() {
                     color = Color.White,
                     modifier = Modifier.clickable {
                         Toast.makeText(context, "Forget password clicked", Toast.LENGTH_SHORT).show()
-                        // Implement forget password flow if desired
                     }
                 )
             }
@@ -181,17 +201,16 @@ fun LoginBody() {
                             if (currentUser != null) {
                                 userViewModel.getUserFromDatabase(currentUser.uid) { userModel, errorMsg ->
                                     if (userModel != null) {
-                                        // Save credentials if rememberMe checked
                                         if (rememberMe) {
-                                            sharedPreferences.edit()
-                                                .putString("email", email)
-                                                .putString("password", password)
-                                                .apply()
+                                            sharedPreferences.edit {
+                                                putString("email", email)
+                                                    .putString("password", password)
+                                            }
                                         } else {
-                                            sharedPreferences.edit()
-                                                .remove("email")
-                                                .remove("password")
-                                                .apply()
+                                            sharedPreferences.edit {
+                                                remove("email")
+                                                    .remove("password")
+                                            }
                                         }
 
                                         if (userModel.admin) {

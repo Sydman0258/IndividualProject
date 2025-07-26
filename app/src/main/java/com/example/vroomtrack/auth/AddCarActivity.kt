@@ -1,8 +1,6 @@
 package com.example.vroomtrack.auth
 
-// Android imports
-import android.app.Activity
-import android.content.Intent
+
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -27,8 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.vroomtrack.ViewModel.CarViewModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -201,7 +198,7 @@ fun AddEditCarScreen(
             OutlinedTextField(
                 value = rating,
                 onValueChange = { newValue -> if (newValue.matches(Regex("^\\d*\\.?\\d*\$")) || newValue.isEmpty()) rating = newValue },
-                label = { Text("Rating (0.0-5.0)") },
+                label = { Text("Admin's Rating (0.0-5.0)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )

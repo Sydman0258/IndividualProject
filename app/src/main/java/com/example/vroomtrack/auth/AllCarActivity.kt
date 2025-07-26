@@ -55,10 +55,11 @@ fun AllCarsScreen() {
                 val carList = mutableListOf<CarModel>()
                 for (carSnap in snapshot.children) {
                     val car = carSnap.getValue(CarModel::class.java)
-                    if (car != null) {
+                    if (car != null && car.available) {
                         carList.add(car.copy(id = carSnap.key ?: ""))
                     }
                 }
+
                 cars = carList
                 isLoading = false
                 errorMessage = null

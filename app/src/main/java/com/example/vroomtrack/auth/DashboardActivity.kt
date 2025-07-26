@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,7 +46,7 @@ class DashboardActivity : ComponentActivity() {
         setContent {
             VroomTrackTheme {
                 DashboardScreen()
-            }
+
         }
     }
 }
@@ -85,8 +85,9 @@ fun DashboardScreen(
     }
 
     val filteredCars = cars.filter {
-        it.name.contains(searchQuery, ignoreCase = true)
+        it.available && it.name.contains(searchQuery, ignoreCase = true)
     }
+
 
     Column(
         modifier = Modifier
@@ -110,9 +111,7 @@ fun DashboardScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.Gray)
+                        .size(2.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -145,7 +144,7 @@ fun DashboardScreen(
                     }
                 }) {
                     Icon(
-                        imageVector = Icons.Default.ExitToApp,
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = "Logout",
                         tint = Color.White
                     )
@@ -259,5 +258,5 @@ fun DashboardScreen(
                 }
                 .wrapContentWidth(Alignment.CenterHorizontally)
         )
-    }
+    }   }
 }
