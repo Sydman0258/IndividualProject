@@ -4,7 +4,7 @@ import com.example.vroomtrack.model.BookingModel
 import com.google.firebase.database.*
 import com.google.firebase.auth.FirebaseAuth
 
-class BookingRepositoryImpl : BookingRepository {
+ class BookingRepositoryImpl : BookingRepository {
 
     private val database: DatabaseReference = FirebaseDatabase.getInstance().getReference("bookings")
     private val carRef: DatabaseReference = FirebaseDatabase.getInstance().getReference("cars")

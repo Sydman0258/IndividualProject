@@ -44,6 +44,10 @@ android {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
+    testImplementation("org.mockito:mockito-core:5.6.0")
+    androidTestImplementation("androidx.test:runner:1.2.0")
+    androidTestImplementation("androidx.test:rules:1.2.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -79,5 +83,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.2.2") // For image loading
     implementation("com.squareup.okhttp3:okhttp:4.10.0") // For Cloudinary upload
     implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
+    testImplementation(kotlin("test"))
 
 }
