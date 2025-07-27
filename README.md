@@ -42,5 +42,5 @@ MADE BY SIDDHARTHA
 ### Clone the Repo
 
 ```bash
-git clone https://github.com/your-username/vroomtrack.git
+git clone https://github.com/Sydman0258/IndividualProject.git
 cd vroomtrack
