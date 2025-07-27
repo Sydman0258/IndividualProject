@@ -1,6 +1,5 @@
 package com.example.vroomtrack.auth
 
-
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -13,6 +12,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.vroomtrack.ViewModel.CarViewModel
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
-
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -33,20 +33,15 @@ import java.io.IOException
 
 class AddCarActivity : ComponentActivity() {
 
-    // Cloudinary constants - replace with your values
-    private val cloudName = "dp0ca1yzs" // e.g. "mycloud123"
-    private val uploadPreset = "sydman" // upload preset name you created in Cloudinary
+    private val cloudName = "dp0ca1yzs"
+    private val uploadPreset = "sydman"  
 
-    // OkHttp client for upload requests
     private val client = OkHttpClient()
 
-    // Store the uploaded image URL here
     private var uploadedImageUrl by mutableStateOf("")
 
-    // Launcher to pick image from gallery
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
-            // When image is picked, upload it to Cloudinary
             uploadImageToCloudinary(it)
         }
     }
@@ -55,45 +50,38 @@ class AddCarActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val carId = intent.getStringExtra("carId")
+
         setContent {
             VroomTrackTheme {
                 AddEditCarScreen(
+                    carId = carId,
                     uploadedImageUrl = uploadedImageUrl,
                     onPickImage = { pickImageLauncher.launch("image/*") },
-                    onUploadImage = { uri -> uploadImageToCloudinary(uri) },
-                    onCarAdded = { finish() }
+                    uploadImage = { uri -> uploadImageToCloudinary(uri) },
+                    onFinish = { finish() }
                 )
             }
         }
     }
 
-
     private fun uploadImageToCloudinary(uri: Uri) {
         val context = this
 
-        // Show some UI feedback could be added (like progress indicator)
-
-        // Run upload in background
         val stream = contentResolver.openInputStream(uri) ?: run {
             Toast.makeText(context, "Unable to open image", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Build multipart body
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("file", "upload.jpg", stream.readBytes().toRequestBody(null, 0))
             .addFormDataPart("upload_preset", uploadPreset)
             .build()
 
-        // Prepare request
         val url = "https://api.cloudinary.com/v1_1/$cloudName/image/upload"
-        val request = Request.Builder()
-            .url(url)
-            .post(requestBody)
-            .build()
+        val request = Request.Builder().url(url).post(requestBody).build()
 
-        // Enqueue async upload
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
@@ -124,30 +112,58 @@ class AddCarActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditCarScreen(
+    carId: String?,
     uploadedImageUrl: String,
     onPickImage: () -> Unit,
-    onUploadImage: (android.net.Uri) -> Unit,
-    onCarAdded: () -> Unit
+    uploadImage: (Uri) -> Unit,
+    onFinish: () -> Unit
 ) {
     val context = LocalContext.current
     val carViewModel: CarViewModel = viewModel()
 
     var name by remember { mutableStateOf("") }
     var brand by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf(uploadedImageUrl) } // Use Cloudinary URL
+    var imageUrl by remember { mutableStateOf(uploadedImageUrl) }
     var pricePerDay by remember { mutableStateOf("") }
     var rating by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    LaunchedEffect(carId) {
+        if (!carId.isNullOrEmpty()) {
+            carViewModel.loadCarById(carId)
+            carViewModel.selectedCar.collect { car ->
+                car?.let {
+                    name = it.name
+                    brand = it.brand
+                    imageUrl = it.imageUrl
+                    pricePerDay = it.pricePerDay
+                    rating = it.rating.toString()
+                    description = it.description
+                }
+            }
+        }
+    }
 
     LaunchedEffect(uploadedImageUrl) {
-        imageUrl = uploadedImageUrl // Update imageUrl state when upload completes
+        if (uploadedImageUrl.isNotBlank()) {
+            imageUrl = uploadedImageUrl
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add New Car") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1E88E5), titleContentColor = Color.White)
+                title = { Text(if (carId == null) "Add New Car" else "Edit Car") },
+                navigationIcon = {
+                    IconButton(onClick = { onFinish() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E88E5),
+                    titleContentColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -163,19 +179,29 @@ fun AddEditCarScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
-        )
-        {
-
+        ) {
             Text("Enter Car Details", style = MaterialTheme.typography.headlineSmall, color = Color.Black)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Car Name") }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(value = brand, onValueChange = { brand = it }, label = { Text("Brand") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Car Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show uploaded image URL or button to pick image
+            OutlinedTextField(
+                value = brand,
+                onValueChange = { brand = it },
+                label = { Text("Brand") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             if (imageUrl.isNotBlank()) {
                 Text(text = "Image Uploaded", color = Color.Green)
                 Text(text = imageUrl, color = Color.Blue, modifier = Modifier.padding(vertical = 8.dp))
@@ -184,24 +210,31 @@ fun AddEditCarScreen(
                     Text("Pick Image from Gallery")
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = pricePerDay,
-                onValueChange = { newValue -> if (newValue.matches(Regex("^\\d*\\.?\\d*\$")) || newValue.isEmpty()) pricePerDay = newValue },
+                onValueChange = { newValue ->
+                    if (newValue.matches(Regex("^\\d*\\.?\\d*\$")) || newValue.isEmpty()) pricePerDay = newValue
+                },
                 label = { Text("Price Per Day") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = rating,
-                onValueChange = { newValue -> if (newValue.matches(Regex("^\\d*\\.?\\d*\$")) || newValue.isEmpty()) rating = newValue },
+                onValueChange = { newValue ->
+                    if (newValue.matches(Regex("^\\d*\\.?\\d*\$")) || newValue.isEmpty()) rating = newValue
+                },
                 label = { Text("Admin's Rating (0.0-5.0)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
@@ -211,9 +244,11 @@ fun AddEditCarScreen(
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
+                enabled = !isLoading,
                 onClick = {
                     val parsedRating = rating.toDoubleOrNull()
                     if (name.isBlank() || brand.isBlank() || imageUrl.isBlank() || pricePerDay.isBlank() || parsedRating == null || description.isBlank()) {
@@ -225,17 +260,39 @@ fun AddEditCarScreen(
                         return@Button
                     }
 
-                    carViewModel.addCar(
-                        name, brand, imageUrl, pricePerDay, parsedRating, description
-                    ) { success, message ->
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                        if (success) onCarAdded()
+                    isLoading = true
+
+                    if (carId == null) {
+                        carViewModel.addCar(
+                            name, brand, imageUrl, pricePerDay, parsedRating, description
+                        ) { success, message ->
+                            isLoading = false
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            if (success) onFinish()
+                        }
+                    } else {
+                        carViewModel.updateCar(
+                            id = carId,
+                            name = name,
+                            brand = brand,
+                            imageUrl = imageUrl,
+                            pricePerDay = pricePerDay,
+                            rating = parsedRating,
+                            description = description,
+                            available = true
+                        ) { success, message ->
+                            isLoading = false
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            if (success) onFinish()
+                        }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5), contentColor = Color.White)
             ) {
-                Text("Add Car", fontSize = 18.sp)
+                Text(if (carId == null) "Add Car" else "Update Car", fontSize = 18.sp)
             }
         }
     }

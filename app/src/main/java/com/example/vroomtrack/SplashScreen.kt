@@ -35,6 +35,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import com.example.vroomtrack.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -85,6 +88,9 @@ fun SplashContent(
     var startAnimation by remember { mutableStateOf(false) }
     var showLoader by remember { mutableStateOf(false) }
     var isNavigating by remember { mutableStateOf(false) }
+    val MyFontFamily = FontFamily(
+        Font(R.font.lequire, FontWeight.Bold)
+    )
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -123,6 +129,7 @@ fun SplashContent(
             Text(
                 text = "VR.O.OM",
                 style = MaterialTheme.typography.displayLarge.copy(
+                    fontFamily = MyFontFamily,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     textAlign = TextAlign.Center,
@@ -133,6 +140,8 @@ fun SplashContent(
             Text(
                 text = "TRACK",
                 style = MaterialTheme.typography.displayMedium.copy(
+                    fontFamily = MyFontFamily,
+
                     color = Color.White,
                     letterSpacing = 8.sp,
                     textAlign = TextAlign.Center

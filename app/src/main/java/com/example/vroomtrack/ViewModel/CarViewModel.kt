@@ -65,7 +65,6 @@ class CarViewModel(private val repository: CarRepository = CarRepositoryImpl()) 
         }
     }
 
-    // Updated updateCar function with CarModel fields
     fun updateCar(
         id: String,
         name: String,
