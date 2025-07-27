@@ -25,13 +25,16 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.vroomtrack.auth.AdminActivity
 import com.example.vroomtrack.auth.DashboardActivity
 import com.example.vroomtrack.ui.theme.VroomTrackTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.delay
 
 class LoginActivity : ComponentActivity() {
@@ -49,9 +52,11 @@ class LoginActivity : ComponentActivity() {
 fun LoginScreen() {
     val Black = Color(0xFF000000)
     val context = LocalContext.current
+
     var email by remember { mutableStateOf(TextFieldValue("")) }
     var password by remember { mutableStateOf(TextFieldValue("")) }
-    var rememberMe by remember { mutableStateOf(false) }  // <-- Remember Me state
+    var passwordVisible by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var resetEmail by remember { mutableStateOf(TextFieldValue("")) }
     var showAnimation by remember { mutableStateOf(false) }
@@ -75,11 +80,7 @@ fun LoginScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.align(Alignment.Center)
         ) {
-            Text(
-                "VR.O.OM Track",
-                fontSize = 24.sp,
-                color = Color.White
-            )
+            Text("VR.O.OM Track", fontSize = 24.sp, color = Color.White)
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
@@ -97,8 +98,7 @@ fun LoginScreen() {
                     focusedIndicatorColor = Color.White,
                     unfocusedIndicatorColor = Color.White,
                 ),
-                        shape = RoundedCornerShape(20.dp)
-
+                shape = RoundedCornerShape(20.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -107,8 +107,20 @@ fun LoginScreen() {
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
+                trailingIcon = {
+                    val icon = if (passwordVisible)
+                        painterResource(id = R.drawable.baseline_visibility_24)
+                    else
+                        painterResource(id = R.drawable.baseline_visibility_off_24)
+                    Icon(
+                        painter = icon,
+                        contentDescription = "Toggle Password Visibility",
+                        tint = Color.White,
+                        modifier = Modifier.clickable { passwordVisible = !passwordVisible }
+                    )
+                },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
@@ -120,12 +132,10 @@ fun LoginScreen() {
                     unfocusedIndicatorColor = Color.White,
                 ),
                 shape = RoundedCornerShape(20.dp)
-
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Remember Me checkbox row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -143,11 +153,7 @@ fun LoginScreen() {
                     )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Remember Me",
-                    color = Color.White,
-                    fontSize = 14.sp
-                )
+                Text(text = "Remember Me", color = Color.White, fontSize = 14.sp)
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -155,16 +161,31 @@ fun LoginScreen() {
             Button(
                 onClick = {
                     val auth = FirebaseAuth.getInstance()
+                    val db = FirebaseDatabase.getInstance().reference
+
                     if (email.text.isBlank() || password.text.isBlank()) {
                         Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
+
                     auth.signInWithEmailAndPassword(email.text, password.text)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
-                                Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
-                                // You can use 'rememberMe' here to save preference (e.g. SharedPreferences)
-                                showAnimation = true
+                                val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
+                                db.child("users").child(uid).child("admin").get()
+                                    .addOnSuccessListener { snapshot ->
+                                        val isAdmin = snapshot.getValue(Boolean::class.java) == true
+                                        Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+
+                                        if (isAdmin) {
+                                            context.startActivity(Intent(context, AdminActivity::class.java))
+                                        } else {
+                                            showAnimation = true
+                                        }
+                                    }
+                                    .addOnFailureListener {
+                                        Toast.makeText(context, "Failed to retrieve user role", Toast.LENGTH_SHORT).show()
+                                    }
                             } else {
                                 Toast.makeText(context, "Login failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                             }
@@ -190,7 +211,6 @@ fun LoginScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // "Not a user? Register" with only Register clickable
             val annotatedText = buildAnnotatedString {
                 append("Not a user? ")
                 pushStringAnnotation(tag = "REGISTER", annotation = "register")
@@ -212,7 +232,6 @@ fun LoginScreen() {
             )
         }
 
-        // Password Reset Dialog
         if (showResetDialog) {
             AlertDialog(
                 onDismissRequest = { showResetDialog = false },
@@ -273,7 +292,7 @@ fun CarAnimationScreen(onAnimationComplete: () -> Unit) {
     val screenWidth = context.resources.displayMetrics.widthPixels / context.resources.displayMetrics.density
 
     val carWidth = 450f
-    val animationDuration = 3000 // milliseconds (3 seconds)
+    val animationDuration = 3000
 
     var animationStarted by remember { mutableStateOf(false) }
 

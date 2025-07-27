@@ -193,7 +193,7 @@ fun BookingScreen(
         Text(text = car.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text(text = car.brand, color = Color.Gray, fontSize = 16.sp)
         Text(text = car.description, color = Color.LightGray, fontSize = 14.sp, textAlign = TextAlign.Justify)
-        Text(text = "Daily Rate: ${car.pricePerDay}", color = Color.White, fontSize = 18.sp)
+        Text(text = "Daily Rate: $${car.pricePerDay}", color = Color.White, fontSize = 18.sp)
         Text(text = "Rating: ${car.rating} / 5.0", color = Color.Gray, fontSize = 14.sp)
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -257,7 +257,7 @@ fun BookingScreen(
         OutlinedTextField(
             value = cardNumber,
             onValueChange = { if (it.length <= 19) cardNumber = it.filter(Char::isDigit) },
-            label = { Text("Card Number", color = Color.Gray) },
+            label = { Text("Card Number (13 - 15)", color = Color.Gray) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,

@@ -229,7 +229,7 @@ fun DashboardScreen(
                             fontSize = 14.sp
                         )
                         Text(
-                            text = car.pricePerDay,
+                            text = "$" + car.pricePerDay,
                             color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold

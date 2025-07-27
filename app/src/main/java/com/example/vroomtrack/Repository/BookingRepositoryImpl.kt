@@ -62,17 +62,37 @@ import com.google.firebase.auth.FirebaseAuth
             })
     }
 
-    override fun deleteBooking(bookingId: String, callback: (Boolean, String?) -> Unit) {
-        database.child(bookingId).removeValue()
-            .addOnSuccessListener {
-                callback(true, "Booking deleted successfully!")
-            }
-            .addOnFailureListener { e ->
-                callback(false, "Failed to delete booking: ${e.message}")
-            }
-    }
+     override fun deleteBooking(bookingId: String, callback: (Boolean, String?) -> Unit) {
+         val databaseRoot = FirebaseDatabase.getInstance().reference
+         val bookingRef = databaseRoot.child("bookings").child(bookingId)
+         val carsRef = databaseRoot.child("cars")
 
-    override fun updateCarAvailability(carName: String, available: Boolean, callback: (Boolean, String?) -> Unit) {
+         bookingRef.get().addOnSuccessListener { snapshot ->
+             val carId = snapshot.child("carId").value?.toString()
+
+             if (carId == null) {
+                 callback(false, "Failed to retrieve car ID from booking.")
+                 return@addOnSuccessListener
+             }
+
+             bookingRef.removeValue().addOnSuccessListener {
+                 carsRef.child(carId).child("available").setValue(true)
+                     .addOnSuccessListener {
+                         callback(true, "Booking deleted and car availability updated.")
+                     }
+                     .addOnFailureListener { e ->
+                         callback(false, "Booking deleted, but failed to update car: ${e.message}")
+                     }
+             }.addOnFailureListener { e ->
+                 callback(false, "Failed to delete booking: ${e.message}")
+             }
+         }.addOnFailureListener { e ->
+             callback(false, "Failed to fetch booking data: ${e.message}")
+         }
+     }
+
+
+     override fun updateCarAvailability(carName: String, available: Boolean, callback: (Boolean, String?) -> Unit) {
         val query = carRef.orderByChild("name").equalTo(carName)
         query.get().addOnSuccessListener { snapshot ->
             if (snapshot.exists()) {
