@@ -42,6 +42,7 @@ class LoginActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             VroomTrackTheme {
+                // Main content is the login screen UI
                 LoginScreen()
             }
         }
@@ -53,6 +54,7 @@ fun LoginScreen() {
     val Black = Color(0xFF000000)
     val context = LocalContext.current
 
+    // UI state variables
     var email by remember { mutableStateOf(TextFieldValue("")) }
     var password by remember { mutableStateOf(TextFieldValue("")) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -61,6 +63,7 @@ fun LoginScreen() {
     var resetEmail by remember { mutableStateOf(TextFieldValue("")) }
     var showAnimation by remember { mutableStateOf(false) }
 
+    // If animation flag is true, show animation screen instead of login
     if (showAnimation) {
         CarAnimationScreen {
             context.startActivity(Intent(context, DashboardActivity::class.java))
@@ -69,6 +72,7 @@ fun LoginScreen() {
         return
     }
 
+    // Main Login UI
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -80,9 +84,11 @@ fun LoginScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.align(Alignment.Center)
         ) {
+            // Title
             Text("VR.O.OM Track", fontSize = 24.sp, color = Color.White)
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Email Input
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -103,6 +109,7 @@ fun LoginScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Password Input with toggle visibility icon
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -136,6 +143,7 @@ fun LoginScreen() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Remember Me Checkbox
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -158,6 +166,7 @@ fun LoginScreen() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Login Button
             Button(
                 onClick = {
                     val auth = FirebaseAuth.getInstance()
@@ -168,18 +177,23 @@ fun LoginScreen() {
                         return@Button
                     }
 
+                    // Firebase Authentication
                     auth.signInWithEmailAndPassword(email.text, password.text)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
+
+                                // Check if the user is an admin in Firebase Realtime Database
                                 db.child("users").child(uid).child("admin").get()
                                     .addOnSuccessListener { snapshot ->
                                         val isAdmin = snapshot.getValue(Boolean::class.java) == true
                                         Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
 
                                         if (isAdmin) {
+                                            // Navigate to AdminActivity
                                             context.startActivity(Intent(context, AdminActivity::class.java))
                                         } else {
+                                            // Show animation, then go to Dashboard
                                             showAnimation = true
                                         }
                                     }
@@ -201,6 +215,7 @@ fun LoginScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Forgot Password Link
             Text(
                 "Forgot Password?",
                 color = Color.White,
@@ -211,6 +226,7 @@ fun LoginScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Register link
             val annotatedText = buildAnnotatedString {
                 append("Not a user? ")
                 pushStringAnnotation(tag = "REGISTER", annotation = "register")
@@ -232,6 +248,7 @@ fun LoginScreen() {
             )
         }
 
+        // Password Reset Dialog
         if (showResetDialog) {
             AlertDialog(
                 onDismissRequest = { showResetDialog = false },
@@ -259,6 +276,7 @@ fun LoginScreen() {
                             Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
                             return@TextButton
                         }
+                        // Send password reset email
                         FirebaseAuth.getInstance().sendPasswordResetEmail(resetEmail.text)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
@@ -296,17 +314,20 @@ fun CarAnimationScreen(onAnimationComplete: () -> Unit) {
 
     var animationStarted by remember { mutableStateOf(false) }
 
+    // Car movement animation from left to right
     val animatedOffsetX by animateFloatAsState(
         targetValue = if (animationStarted) screenWidth + carWidth else -carWidth,
         animationSpec = tween(durationMillis = animationDuration)
     )
 
+    // Launch animation when this screen is shown
     LaunchedEffect(Unit) {
         animationStarted = true
         delay(animationDuration.toLong())
         onAnimationComplete()
     }
 
+    // Animation UI with black background and moving car
     Box(
         modifier = Modifier
             .fillMaxSize()

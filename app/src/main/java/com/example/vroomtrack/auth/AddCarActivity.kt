@@ -31,15 +31,17 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
+// Class for adding/editing a car entry in the VroomTrack app
 class AddCarActivity : ComponentActivity() {
 
+    // Cloudinary credentials for image upload
     private val cloudName = "dp0ca1yzs"
-    private val uploadPreset = "sydman"  
+    private val uploadPreset = "sydman"
 
     private val client = OkHttpClient()
-
     private var uploadedImageUrl by mutableStateOf("")
 
+    // Launcher to pick image from gallery and upload
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             uploadImageToCloudinary(it)
@@ -50,8 +52,9 @@ class AddCarActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val carId = intent.getStringExtra("carId")
+        val carId = intent.getStringExtra("carId") // Check if editing an existing car
 
+        // Compose UI with theme and pass all required parameters to the screen
         setContent {
             VroomTrackTheme {
                 AddEditCarScreen(
@@ -65,6 +68,7 @@ class AddCarActivity : ComponentActivity() {
         }
     }
 
+    // Function to upload selected image to Cloudinary
     private fun uploadImageToCloudinary(uri: Uri) {
         val context = this
 
@@ -82,6 +86,7 @@ class AddCarActivity : ComponentActivity() {
         val url = "https://api.cloudinary.com/v1_1/$cloudName/image/upload"
         val request = Request.Builder().url(url).post(requestBody).build()
 
+        // Async upload with success/failure handling
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
@@ -121,6 +126,7 @@ fun AddEditCarScreen(
     val context = LocalContext.current
     val carViewModel: CarViewModel = viewModel()
 
+    // Form state variables
     var name by remember { mutableStateOf("") }
     var brand by remember { mutableStateOf("") }
     var imageUrl by remember { mutableStateOf(uploadedImageUrl) }
@@ -129,6 +135,7 @@ fun AddEditCarScreen(
     var description by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
+    // Load existing car data if editing
     LaunchedEffect(carId) {
         if (!carId.isNullOrEmpty()) {
             carViewModel.loadCarById(carId)
@@ -145,6 +152,7 @@ fun AddEditCarScreen(
         }
     }
 
+    // Update local state if image was uploaded
     LaunchedEffect(uploadedImageUrl) {
         if (uploadedImageUrl.isNotBlank()) {
             imageUrl = uploadedImageUrl
@@ -170,6 +178,7 @@ fun AddEditCarScreen(
 
         val scrollState = rememberScrollState()
 
+        // Scrollable form layout
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -202,6 +211,7 @@ fun AddEditCarScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Show image URL if already uploaded, else button to pick image
             if (imageUrl.isNotBlank()) {
                 Text(text = "Image Uploaded", color = Color.Green)
                 Text(text = imageUrl, color = Color.Blue, modifier = Modifier.padding(vertical = 8.dp))
@@ -247,6 +257,7 @@ fun AddEditCarScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Submit button to add or update car
             Button(
                 enabled = !isLoading,
                 onClick = {
@@ -262,6 +273,7 @@ fun AddEditCarScreen(
 
                     isLoading = true
 
+                    // Add or update car in ViewModel
                     if (carId == null) {
                         carViewModel.addCar(
                             name, brand, imageUrl, pricePerDay, parsedRating, description
