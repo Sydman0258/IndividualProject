@@ -1,6 +1,6 @@
 # Important 
 
-Admin Details can be viewed from the video but incase below is the admin credentials registered in RealTimeDatabase (RTDB)
+Admin Details can be viewed from the video but incase below is the admin credentials registered in RealTimeDatabase (RTDB) and user authentication
 
 
 admin:true
